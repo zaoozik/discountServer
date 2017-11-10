@@ -4,7 +4,10 @@ from orgs import models as org_models
 
 class Card (models.Model):
     code = models.CharField(max_length=20)
-    accumulation = models.FloatField(default='0')
+    accumulation = models.FloatField(default=0)
+    bonus = models.FloatField(default=0)
+    discount = models.FloatField(default=0)
+    holder_name = models.CharField(max_length=100, default='')
     org = models.ForeignKey(org_models.Org, on_delete=models.CASCADE)
 
     class Meta:

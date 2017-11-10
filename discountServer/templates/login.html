@@ -1,20 +1,28 @@
-{% extends 'index.html' %}
+{% extends './index.html' %}
 
 {% block 'login' %}
-<div class="row" id="login">
+
+    {% csrf_token %}
+<div class="containter h-100">
+        <div class="row h-100 justify-content-center align-items-center" id="login">
             <div class="card col-sm-4">
-                <div class="card-block">
-                        <h3 class="card-title">Авторизация</h3>
-                        <p class="card-text">
+
+                <div class="form-signin">
+                        <h2 class="form-signin-heading">Авторизация</h2>
                         <label for="user">Логин</label>
-                        <input type="text" id="user">
-                        </p>
-                        <p class="card-text">
-                        <label for="password">Пароль</label>
-                        <input type ='password' id="password">
-                        </p>
-                        <button class="btn btn-primary">Войти</button>
+                        <input type="text" class="form-control" id="user">
+
+                         <label for="password">Пароль</label>
+                         <input type ='password' class="form-control" id="password">
+                        <br>
+                         <button class="btn btn-lg btn-primary btn-block" onclick="sendAuth();">Войти</button>
+                        <br>
                 </div>
             </div>
         </div>
+</div>
+
+
+
+
 {% endblock %}

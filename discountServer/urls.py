@@ -19,8 +19,9 @@ from discountServer import views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    #url(r'^', views.index),
-    url(r'^login/$', views.login, name='login'),
+    url(r'^login/$', views.signIn, name='signIn'),
+    url(r'^logout/$', views.signOff, name='signOff'),
     url(r'^cards/', include('cards.urls')),
     url(r'^api/', include('api.urls')),
+    url(r'^', views.index),
 ]

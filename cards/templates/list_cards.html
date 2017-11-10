@@ -1,0 +1,20 @@
+{% extends 'main.html' %}
+{% block 'content' %}
+
+    <table class="table">
+        <tr>
+            <th>КОД</th>
+            <th>НАКОПЛЕНИЯ</th>
+            <th>ФИО</th>
+        </tr>
+        {% for card in cards %}
+     <tr>
+         <td>{{ card.code }}</td>
+         <td>{{ card.accumulation}}</td>
+         <td>{{ card.holder_name}}</td>
+     </tr>
+        {% endfor %}
+
+    </table>
+
+{% endblock %}
