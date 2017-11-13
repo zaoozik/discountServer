@@ -17,5 +17,7 @@ from django.conf.urls import url, include
 from cards import views
 
 urlpatterns = [
+    url(r'^maintenance/$', views.maintenance, name='maintenance'),
     url(r'^', views.listCards, name='listCards'),
+
 ]

@@ -1,0 +1,213 @@
+/*
+/////ВТИ-СЕРВИС, 2017//////
+г. Курск, ул. Ватутина, 25
+---------------------------
+версия 1.0.0
+---------------------------
+Скрипт предназначен для обмена с дисконтным сервером для FRONTOL.
+
+
+*/
+
+
+function init()
+{
+ frontol.addEventListener("addCard", "getCardBonus", true);
+ frontol.addEventListener("closeDocument", "reduceCardBonus", true);
+
+}
+
+
+var discount = 0;
+var payValue = 0;
+var card_code = 0;
+
+//Настройки скрипта
+var max_discount_percentage = 30;
+var ORG_ID = "1";
+var USER_LOGIN = "k_igumenov";
+var USER_PASSWORD = "yb[ezct,t";
+
+
+function addDiscountPay(Doc)
+{
+  //frontol.actions.showMessage("Бонусных накоплений: " +discount);
+  var discount_current;
+  var doc_sum = frontol.currentDocument.totalSum;
+  var discount_limit = doc_sum * max_discount_percentage / 100;
+  if (discount_limit >= discount)
+  {
+     discount_current = discount;
+  } else
+  {
+    discount_current = discount_limit;
+  }
+
+  if (discount_current == 0)
+  {
+     return null;
+  }
+
+  var dialogRes =  frontol.actions.showMessage("Вы можете оплатить бонусами " + discount_current + ". Списать бонусы?", Button.YesNo);
+
+ if ( dialogRes == DialogResult.Yes)
+ {
+      payValue = frontol.actions.inputString("Введите сумму списания бонусов. Максимально: " + discount_current, discount_current, 10);
+      if (payValue == null)
+      {
+       return null;
+      }  else if  (parseFloat(payValue) > discount_current)
+      {
+            frontol.actions.showMessage("Сумма списания превышает возможную сумму. Отмена скидок!");
+            return null;
+      }
+
+      return parseFloat(payValue);
+
+
+ } else if  ( dialogRes == DialogResult.No)
+ {
+   return null;
+   }
+}
+
+
+
+
+
+function reduceCardBonus()
+{
+     if (payValue > 0 )
+     {
+      if (remCardAccum(payValue) == payValue)
+         {
+          return parseFloat(payValue);
+           }
+            else
+            {
+             frontol.actions.showError("Невозможно списать бонусы!");
+             frontol.currentDocument.stornoPayment(frontol.currentDocument.payment.index);
+              return null;
+               }
+       }
+
+      addCardAccum(frontol.currentDocument.totalSum);
+}
+
+function getCardBonus(Card)
+{
+      card_code = Card.value;
+
+      if (frontol.currentDocument.cardValues != "")
+      {
+          frontol.actions.showError("Карта клиента уже введена! Воспользуйтесь кнопкой отмены введенных карт.");
+          return null;
+      }
+
+      var xhr = new ActiveXObject("MSXML2.XMLHTTP");
+      var salt = Math.random();
+     xhr.open("POST", "http://127.0.0.1:8000/api/cards/"+ORG_ID+"_"+card_code+"_" + salt+"/", true);
+     //xhr.open("POST", "http://127.0.0.1:8000/api/cards/1_0001_" + salt+"/", true);
+     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+     var data = "username="+USER_LOGIN;
+     data+= "&password="+USER_PASSWORD;
+     xhr.send(data);
+     var Disc = 0;
+     while(xhr.readyState != 4){
+        frontol.actions.wait("Идет запрос к дисконтному серверу", 1);
+     }
+     if(xhr.status === 200) {
+        try{
+            Disc = new Number(parseFloat(xhr.responseText));
+            frontol.actions.showMessage("Накопления на карте: "+Disc);
+            discount = Disc;
+            return discount;
+        }
+        catch(e){
+            frontol.actions.showError(e);
+            return null;
+        }
+     }
+     else if(xhr.status === 404)
+     {
+          frontol.actions.showError("Карта " + card_code+" не найдена");
+          return null;
+     }
+      else if(xhr.status === 503)
+     {
+          frontol.actions.showError("Проверьте параметры доступа и действие подписки");
+          return null;
+     }
+     else
+     {
+        frontol.actions.showError("Ошибка получения данных с дисконтного сервиса");
+        return;
+     }
+
+
+}
+function addCardAccum(value)
+{
+    var xhr = new ActiveXObject("MSXML2.XMLHTTP");
+       var salt = Math.random();
+     xhr.open("POST", "http://127.0.0.1:8000/api/cards/add_accum/"+ORG_ID+"_"+card_code+"_" + salt+"/", true);
+     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+     var data = "username="+USER_LOGIN;
+     data+= "&password="+USER_PASSWORD;
+     data+= "&value="+value;
+     xhr.send(data);
+     var Disc = 0;
+     while(xhr.readyState != 4){
+        frontol.actions.wait("Идет запрос к дисконтному серверу", 1);
+     }
+     if(xhr.status === 200) {
+        try{
+            Disc = new Number(parseFloat(xhr.responseText));
+        }
+        catch(e){
+            frontol.actions.showError(e);
+            return 0;
+        }
+     }
+     else
+     {
+        frontol.actions.showError("Ошибка получения данных с дисконтного сервиса");
+     }
+     //AO.ShowMessage(xhr.responseText);
+     xhr.abort();
+     return Disc;
+}
+
+
+function remCardAccum(val)
+{
+    var xhr = new ActiveXObject("MSXML2.XMLHTTP");
+       var salt = Math.random();
+     xhr.open("POST", "http://127.0.0.1:8000/api/cards/rem_accum/1_0001_" + salt+"/", true);
+     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+     var data = "username="+USER_LOGIN;
+     data+= "&password="+USER_PASSWORD;
+     data+= "&value="+val;
+     xhr.send(data);
+     var Disc = 0;
+     while(xhr.readyState != 4){
+        frontol.actions.wait("Идет запрос к дисконтному серверу", 1);
+     }
+     if(xhr.status === 200) {
+        try{
+            Disc = new Number(parseFloat(xhr.responseText));
+            return Disc;
+        }
+        catch(e){
+            frontol.actions.showError(e);
+            return 0;
+        }
+     }
+     else
+     {
+        frontol.actions.showError("Ошибка получения данных с дисконтного сервиса");
+     }
+     //AO.ShowMessage(xhr.responseText);
+     xhr.abort();
+     return Disc;
+}

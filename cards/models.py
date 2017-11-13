@@ -9,6 +9,10 @@ class Card (models.Model):
     discount = models.FloatField(default=0)
     holder_name = models.CharField(max_length=100, default='')
     org = models.ForeignKey(org_models.Org, on_delete=models.CASCADE)
+    deleted = models.CharField(max_length=1, default='n')
+
+    def __str__(self):
+        return self.org.name + "_" + self.code
 
     class Meta:
         unique_together = (("code", "org"),)

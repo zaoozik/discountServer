@@ -48,6 +48,7 @@ def signIn(request):
 
         #return HttpResponse(json.dumps({'answer': "POST"}), content_type="application/json")
 
+@login_required
 def signOff(request):
     logout(request)
     return redirect("/login/")
