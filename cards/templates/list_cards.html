@@ -3,7 +3,7 @@
 
 <div class = "row"  id="toolbox" style="margin-bottom: 20px;">
     <div class="col-sm-2">
-        <button class="btn btn-success" id="addCardButton" data-toggle="modal" data-target="#addCardModal">Добавить</button>
+        <button class="btn btn-success" id="addCardButton" data-toggle="modal" data-target="#CardModal">Добавить</button>
     </div>
     <div class="col-sm-2">
         <button class="btn btn-danger " onclick="">Удалить</button>
@@ -25,11 +25,11 @@
         {% for card in cards %}
         <form id="{{ card.code }}">
      <tr>
-         <td><input class="form-control" type="checkbox" id="check_{{card.code}}"></td>
+         <td><input class="form-check-input" type="checkbox" id="check_{{card.code}}"></td>
          <td>{{ card.code }}</td>
          <td>{{ card.accumulation}}</td>
          <td>{{ card.holder_name}}</td>
-         <td><button data-toggle="modal" data-target="#viewCardModal" type="button" onclick="getCard('{{card.code}}');" class="fa fa-eye" aria-hidden="true" title="Просмотр"></button></td>
+         <td><button data-toggle="modal" data-target="#CardModal" type="button" onclick="getCard('{{card.code}}');" class="fa fa-eye" aria-hidden="true" title="Просмотр"></button></td>
      </tr>
             </form>
         {% endfor %}
@@ -37,75 +37,29 @@
     </table>
 
 
-<div class="modal fade" id="addCardModal">
+<div class="modal fade" id="CardModal">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Добавление карты</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <button type="button" class="close"  onclick="clearForm();" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div class="modal-body">
-          <p>
-            <label for="addCardCode">Код карты</label>
-            <input class="form-control"  type="text" id="addCardCode" value="">
-            </p>
-          <p>
-            <label for="addCardFio">ФИО держателя</label>
-            <input class="form-control"  type="text" id="addCardFio" value="">
-          </p>
-
+          <form id="CardForm" method="POST">
+              {% csrf_token %}
+                {{ form }}
+          </form>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-primary" onclick="saveNewCard();">Сохранить</button>
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-secondary" onclick="clearForm();" data-dismiss="modal">Отмена</button>
       </div>
     </div>
   </div>
 </div>
 
-
-
-<div class="modal fade" id="viewCardModal">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Просмотр карты</h5>
-        <button type="button"  data-dismiss="modal" class="close"  aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-          <p>
-            <label for="CardCode">Код карты</label>
-            <input   class="form-control" disabled type="text" id="CardCode" value="">
-            </p>
-          <p>
-            <label for="CardFio">ФИО держателя</label>
-            <input class="form-control"  type="text" id="CardFio" value="">
-          </p>
-          <p>
-            <label for="CardAccum">Накопления</label>
-            <input class="form-control" disabled type="text" id="CardAccum" value="">
-          </p>
-          <p>
-            <label for="CardBonus">Бонусы</label>
-            <input class="form-control"  disabled type="text" id="CardBonus" value="">
-          </p>
-          <p>
-            <label for="CardDiscount">Скидка</label>
-            <input class="form-control"  disabled type="text" id="CardDiscount" value="">
-          </p>
-
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" onclick="">Сохранить</button>
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <script>
     var buffer= '';
@@ -134,10 +88,10 @@
 });
 
 function saveNewCard(){
-    var card_code= $("#addCardCode").val();
-    var card_holder_name = $("#addCardFio").val();
-    var card_data = {"card_code": card_code,
-                        "card_holder_name": card_holder_name}
+    var code= $("#id_code").val();
+    var holder_name = $("#id_holder_name").val();
+    var card_data = {"code": code,
+                        "holder_name": holder_name}
     var cmd = "add";
 
     $.ajax({
@@ -163,9 +117,17 @@ function saveNewCard(){
 
 }
 
+function clearForm(){
+          $('#id_code').val('');
+           $('#id_holder_name').val('');
+            $('#id_accumulation').val(0);
+            $('#id_bonus').val(0);
+            $('#id_discount').val(0);
+            }
+
 
 function getCard(card_code){
-    var card_data = {"card_code": card_code}
+    var card_data = {"code": card_code}
     var cmd = "get";
     var cData;
 
@@ -181,11 +143,11 @@ function getCard(card_code){
           if (response.result) {
             if (response.result == "ok"){
                 cData = response.data;
-                $('#CardCode').val(cData.code);
-                $('#CardFio').val(cData.holder_name);
-                $('#CardAccum').val(cData.accumulation);
-                $('#CardBonus').val(cData.bonus);
-                $('#CardDiscount').val(cData.discount);
+                $('#id_code').val(cData.code);
+                $('#id_holder_name').val(cData.holder_name);
+                $('#id_accumulation').val(cData.accumulation);
+                $('#id_bonus').val(cData.bonus);
+                $('#id_discount').val(cData.discount);
 
             }
             else
@@ -195,6 +157,8 @@ function getCard(card_code){
          }
         }
       });
+
+
 
 }
 

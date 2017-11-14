@@ -1,0 +1,32 @@
+{% extends 'main.html' %}
+{% block 'content' %}
+<h3>Настройки</h3>
+<div class="jumbotron">
+    <h3>{{org_name}}</h3>
+    <form  id="bonus-form" class="form-group" method="POST" action="../settings/save/" >
+            {% csrf_token %}
+                {{ form }}
+
+     <p class="text-center">
+         </br>
+        <button type="submit" class="btn btn-lg">Сохранить</button>
+     </p>
+    </form>
+
+    <form id="change" hidden method="post" action="/settings/">
+        {% csrf_token %}
+        <input name="algorithm" id="change-algorithm">
+    </form>
+
+</div>
+
+<script>
+    $('#id_algorithm').change(function() {
+        $('#change-algorithm').val($('#id_algorithm').val());
+        $('#change').submit();
+
+        });
+
+</script>
+
+{% endblock %}

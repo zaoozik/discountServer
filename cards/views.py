@@ -10,6 +10,7 @@ from rest_framework.parsers import JSONParser
 from django.contrib.auth.decorators import login_required
 from django.template import loader
 from users.models import UserCustom
+from .forms import CardForm
 import json
 
 # Create your views here.
@@ -18,6 +19,7 @@ import json
 @login_required(login_url='../login/')
 def listCards(request):
     response = {}
+    form = CardForm()
     template = loader.get_template('list_cards.html')
     user =UserCustom.objects.get(user_id__exact=request.user.pk)
 
@@ -25,7 +27,7 @@ def listCards(request):
         return HttpResponse(template.render(response, request))
     cards = Card.objects.filter(org__exact=user.org)
     if cards is not None:
-        response = {"cards": cards}
+        response = {"cards": cards, "form": form}
         return HttpResponse(template.render(response, request))
 
 
@@ -40,13 +42,15 @@ def maintenance(request):
                 if "data" in post:
                     data = json.loads(post["data"])
                     try:
-                        new_card = Card()
-                        new_card.code = data["card_code"]
-                        new_card.holder_name = data["card_holder_name"]
-                        new_card.org=user.org
-                        new_card.save()
-                        response = {"result": "ok"}
-                        return HttpResponse(json.dumps(response), content_type="application/json")
+                        form = CardForm(data)
+                        if form.is_valid():
+                            new_card = Card()
+                            new_card.code = form.cleaned_data['code']
+                            new_card.holder_name = form.cleaned_data['holder_name']
+                            new_card.org=user.org
+                            new_card.save()
+                            response = {"result": "ok"}
+                            return HttpResponse(json.dumps(response), content_type="application/json")
                     except:
                         response = {"result": "error"}
                         return HttpResponse(json.dumps(response), content_type="application/json")
@@ -54,7 +58,7 @@ def maintenance(request):
                 if "data" in post:
                     data = json.loads(post["data"])
                     try:
-                        card = Card.objects.filter(code__exact=data["card_code"],
+                        card = Card.objects.filter(code__exact=data["code"],
                                                    org_id__exact=user.org.pk
                                                    ).get()
                         data = {
