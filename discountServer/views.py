@@ -8,6 +8,9 @@ from django.template import loader
 from core.forms import BonusForm, DiscountForm
 from users.models import UserCustom
 from core.models import DiscountPlan
+from transactions.models import Transaction
+from transactions.forms import ControlsForm
+
 
 
 @login_required
@@ -135,3 +138,16 @@ def settingsSave(request):
                     response = {'form': form, 'org_name': 'СОХРАНЕНО'}
                     template = loader.get_template('settings.html')
                     return redirect('/settings/')
+
+
+@login_required
+def transactions(request):
+    if request.method == 'GET':
+        user = UserCustom.objects.get(user_id__exact=request.user.pk)
+        try:
+            trans = Transaction.objects.filter(org_id__exact=user.org.pk)
+        except Exception as err:
+            trans= {}
+        response = {'transactions': trans, 'form': ControlsForm()}
+        template = loader.get_template('transactions.html')
+        return HttpResponse(template.render(response, request))

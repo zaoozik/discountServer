@@ -20,7 +20,7 @@ def custom_round(value, rounding):
     return None
 
 
-def count (value, json_str_parameters):
+def count (value, card, json_str_parameters):
     try:
         parameters = json.loads(json_str_parameters)
     except:
@@ -55,9 +55,10 @@ def count (value, json_str_parameters):
     else:
         return None
 
-    if float(value) < min_transaction:
-        return 0
+    card.accumulation += value
 
-    bonus = custom_round((value / bonus_cost), rounding)
+    if value < min_transaction:
+        return card
 
-    return bonus
+    card.bonus += custom_round((value / bonus_cost), rounding)
+    return card

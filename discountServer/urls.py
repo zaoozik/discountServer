@@ -22,6 +22,7 @@ urlpatterns = [
     url(r'^login/$', views.signIn, name='signIn'),
     url(r'^logout/$', views.signOff, name='signOff'),
     url(r'^settings/$', views.settings, name='settings'),
+    url(r'^transactions/$', views.transactions, name='transactions'),
     url(r'^settings/save/', views.settingsSave, name='settingsSave'),
     url(r'^cards/', include('cards.urls')),
     url(r'^api/', include('api.urls')),

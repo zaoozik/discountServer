@@ -13,50 +13,53 @@
 function init()
 {
  frontol.addEventListener("addCard", "getCardBonus", true);
- frontol.addEventListener("closeDocument", "reduceCardBonus", true);
+ frontol.addEventListener("closeDocument", "beforeClose", true);
+ frontol.addEventListener("closeDocument", "afterClose", false);
 
 }
 
 
-var discount = 0;
+var discount = -1;
+var bonus = 0;
 var payValue = 0;
 var card_code = 0;
 
 //Настройки скрипта
-var max_discount_percentage = 30;
+var max_bonus_percentage = 30;
 var ORG_ID = "1";
 var USER_LOGIN = "k_igumenov";
 var USER_PASSWORD = "yb[ezct,t";
 
 
-function addDiscountPay(Doc)
+// Эту функцию следует указать в маркетинговой акции в качестве функции вычисления рублевой скидки
+function addBonusPay(Doc)
 {
-  //frontol.actions.showMessage("Бонусных накоплений: " +discount);
-  var discount_current;
+  //frontol.actions.showMessage("Бонусных накоплений: " +bonus);
+  var bonus_current;
   var doc_sum = frontol.currentDocument.totalSum;
-  var discount_limit = doc_sum * max_discount_percentage / 100;
-  if (discount_limit >= discount)
+  var bonus_limit = doc_sum * max_bonus_percentage / 100;
+  if (bonus_limit >= bonus)
   {
-     discount_current = discount;
+     bonus_current = bonus;
   } else
   {
-    discount_current = discount_limit;
+    bonus_current = bonus_limit;
   }
 
-  if (discount_current == 0)
+  if (bonus_current == 0)
   {
      return null;
   }
 
-  var dialogRes =  frontol.actions.showMessage("Вы можете оплатить бонусами " + discount_current + ". Списать бонусы?", Button.YesNo);
+  var dialogRes =  frontol.actions.showMessage("Вы можете оплатить бонусами " + bonus_current + ". Списать бонусы?", Button.YesNo);
 
  if ( dialogRes == DialogResult.Yes)
  {
-      payValue = frontol.actions.inputString("Введите сумму списания бонусов. Максимально: " + discount_current, discount_current, 10);
+      payValue = frontol.actions.inputString("Введите сумму списания бонусов. Максимально: " + bonus_current, bonus_current, 10);
       if (payValue == null)
       {
        return null;
-      }  else if  (parseFloat(payValue) > discount_current)
+      }  else if  (parseFloat(payValue) > bonus_current)
       {
             frontol.actions.showMessage("Сумма списания превышает возможную сумму. Отмена скидок!");
             return null;
@@ -75,24 +78,32 @@ function addDiscountPay(Doc)
 
 
 
-function reduceCardBonus()
+function beforeClose()
 {
+         //Списываем бонусы
      if (payValue > 0 )
      {
-      if (remCardAccum(payValue) == payValue)
+      if (remCardBonus(payValue) == payValue)
          {
           return parseFloat(payValue);
            }
             else
             {
              frontol.actions.showError("Невозможно списать бонусы!");
-             frontol.currentDocument.stornoPayment(frontol.currentDocument.payment.index);
+             frontol.actions.recalculateAllDiscounts();
               return null;
                }
        }
 
+     // addCardAccum(frontol.currentDocument.totalSum);
+}
+
+
+function afterClose()
+{
       addCardAccum(frontol.currentDocument.totalSum);
 }
+
 
 function getCardBonus(Card)
 {
@@ -104,6 +115,7 @@ function getCardBonus(Card)
           return null;
       }
 
+      payValue=0;
       var xhr = new ActiveXObject("MSXML2.XMLHTTP");
       var salt = Math.random();
      xhr.open("POST", "http://127.0.0.1:8000/api/cards/"+ORG_ID+"_"+card_code+"_" + salt+"/", true);
@@ -120,7 +132,7 @@ function getCardBonus(Card)
         try{
             Disc = new Number(parseFloat(xhr.responseText));
             frontol.actions.showMessage("Накопления на карте: "+Disc);
-            discount = Disc;
+            bonus = Disc;
             return discount;
         }
         catch(e){
@@ -149,13 +161,27 @@ function getCardBonus(Card)
 function addCardAccum(value)
 {
     var xhr = new ActiveXObject("MSXML2.XMLHTTP");
-       var salt = Math.random();
-     //xhr.open("POST", "http://127.0.0.1:8000/api/cards/add_accum/"+ORG_ID+"_"+card_code+"_" + salt+"/", true);
-     xhr.open("POST", "http://127.0.0.1:8000/api/cards/add_accum/1_0001_" + salt+"/", true);
+    var salt = Math.random();
+
+    var doc_number = frontol.currentDocument.number;
+    var doc_external_id =frontol.currentDocument.externalID;
+    var doc_close_user = frontol.currentDocument.closeUser.name;
+    var session = frontol.sessionNumber;
+    var shop = frontol.shopNumber;
+    var workplace = frontol.codeWorkplace;
+
+     xhr.open("POST", "http://127.0.0.1:8000/api/cards/add_accum/"+ORG_ID+"_"+card_code+"_" + salt+"/", true);
+     //xhr.open("POST", "http://127.0.0.1:8000/api/cards/add_accum/1_0001_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "username="+USER_LOGIN;
      data+= "&password="+USER_PASSWORD;
      data+= "&value="+value;
+     data+= "&doc_number="+doc_number;
+     data+= "&doc_external_id="+doc_external_id;
+     data+= "&doc_close_user=" + doc_close_user;
+     data+= "&session=" + session;
+     data+= "&shop=" + shop;
+     data+= "&workplace=" + workplace;
      xhr.send(data);
      var Disc = 0;
      while(xhr.readyState != 4){
@@ -180,11 +206,11 @@ function addCardAccum(value)
 }
 
 
-function remCardAccum(val)
+function remCardBonus(val)
 {
     var xhr = new ActiveXObject("MSXML2.XMLHTTP");
        var salt = Math.random();
-     xhr.open("POST", "http://127.0.0.1:8000/api/cards/rem_accum/1_0001_" + salt+"/", true);
+     xhr.open("POST", "http://127.0.0.1:8000/api/cards/rem_bonus/"+ORG_ID+"_"+card_code+"_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "username="+USER_LOGIN;
      data+= "&password="+USER_PASSWORD;
@@ -208,7 +234,5 @@ function remCardAccum(val)
      {
         frontol.actions.showError("Ошибка получения данных с дисконтного сервиса");
      }
-     //AO.ShowMessage(xhr.responseText);
-     xhr.abort();
      return Disc;
 }

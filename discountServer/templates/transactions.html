@@ -1,0 +1,50 @@
+{% extends 'main.html' %}
+{% load discountServer_extras %}
+{% block 'content' %}
+<h3>История операций</h3>
+<div class="row">
+    <form class="form-inline" id="controls-form" method="post">
+        {% csrf_token %}
+        {{ form }}
+        <button type="submit" class="btn btn-default">Фильтровать</button>
+    </form>
+</div>
+    <table class="table table-striped table-sm" style="font-size: 11pt;">
+        <tr>
+            <th>Дата/время</th>
+            <th>Тип</th>
+            <th>Код карты</th>
+            <th>Накопления</th>
+            <th>Бонусов до операции</th>
+            <th>Начисление бонусов</th>
+            <th>Списание бонусов</th>
+            <th>Номер магазина</th>
+            <th>Рабочее место</th>
+            <th>Номер документа</th>
+            <th>Номер смены</th>
+            <th>Пользователь</th>
+
+        </tr>
+        {% for trans in transactions %}
+         <tr>
+             <td>{{trans.date|date:"Y-m-d"}} /{{ trans.date|time:"H:i" }}</td>
+             <td>{{trans.type|trans_type|default_if_none:"" }}</td>
+             <td>{{ trans.card.code }}</td>
+             <td>{{ trans.sum|default_if_none:''}}</td>
+             <td>{{ trans.bonus_before}}</td>
+             <td>{{ trans.bonus_add|default_if_none:""}}</td>
+             <td>{{ trans.bonus_reduce|default_if_none:""}}</td>
+             <td>{{ trans.shop|default_if_none:'' }}</td>
+             <td>{{ trans.workplace|default_if_none:''  }}</td>
+             <td>{{ trans.doc_number|default_if_none:'' }}</td>
+             <td>{{ trans.session|default_if_none:''  }}</td>
+             <td>{{ trans.doc_close_user|default_if_none:''  }}</td>
+
+
+         </tr>
+        {% endfor %}
+
+    </table>
+
+
+{% endblock %}

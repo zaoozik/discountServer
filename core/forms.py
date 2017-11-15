@@ -8,7 +8,7 @@ class SettingsForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(SettingsForm, self).__init__(*args, **kwargs)
         for field in self.fields:
-            self.fields[field].widget.attrs['class'] = 'form-control'
+            self.fields[field].widget.attrs['class'] = 'form-control '
 
 
 class BonusForm(SettingsForm):

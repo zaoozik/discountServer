@@ -3,9 +3,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpRequest, HttpResponse
 from cards.models import Card
 from users.models import UserCustom
+from transactions.models import Transaction
 from core.models import DiscountPlan
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+from datetime import datetime
 
 
 # Create your views here.
@@ -32,6 +33,7 @@ def apiGetCard(request, org_id, card_code, salt):
 
 @csrf_exempt
 def apiAddAccumToCard(request, org_id, card_code, salt):
+    t_type = 'assume'
     if request.method == 'POST':
         data = request.POST
         if ('username' in data) and ('password' in data):
@@ -40,8 +42,14 @@ def apiAddAccumToCard(request, org_id, card_code, salt):
                 if user.is_active:
                     try:
                         if 'value' in data:
+                            trans = Transaction().create(data)
+                            trans.date = datetime.now()
+
                             cuser = UserCustom.objects.get(user_id__exact=user.pk)
                             card = Card.objects.get(code=card_code, org=org_id)
+
+                            trans.bonus_before = card.bonus
+
                             d_plan = DiscountPlan.objects.get(org_id__exact=cuser.org.pk)
                             algorithm = d_plan.algorithm
 
@@ -49,10 +57,17 @@ def apiAddAccumToCard(request, org_id, card_code, salt):
                             _discounter = __import__('core.lib.%s' % algorithm, globals(), locals(),
                                                  ['count'], 0)
 
-                            result = _discounter.count(data['value'], d_plan.parameters)
-                            card.bonus += result
-                            card.accumulation += float(data['value'])
+                            card = _discounter.count(data['value'], card, d_plan.parameters)
                             card.save()
+                            # пишем статистику
+                            trans.org = cuser.org
+                            trans.card = card
+                            trans.sum = float(data['value'])
+                            trans.bonus_reduce = 0
+                            trans.bonus_add = card.bonus - trans.bonus_before
+                            trans.type = t_type
+                            trans.save()
+
                             return HttpResponse(data['value'])
                         else:
                             return HttpResponse(status='404')
@@ -67,7 +82,7 @@ def apiAddAccumToCard(request, org_id, card_code, salt):
 
 
 @csrf_exempt
-def apiRemAccumToCard(request, org_id, card_code, salt):
+def apiRemCardAccum(request, org_id, card_code, salt):
     if request.method == 'POST':
         data = request.POST
         if ('username' in data) and ('password' in data):
@@ -92,7 +107,8 @@ def apiRemAccumToCard(request, org_id, card_code, salt):
             return HttpResponse(status='503')
 
 @csrf_exempt
-def apiRemBonusToCard(request, org_id, card_code, salt):
+def apiRemCardBonus(request, org_id, card_code, salt):
+    t_type= 'reduce'
     if request.method == 'POST':
         data = request.POST
         if ('username' in data) and ('password' in data):
@@ -101,7 +117,22 @@ def apiRemBonusToCard(request, org_id, card_code, salt):
                 if user.is_active:
                     try:
                         if 'value' in data:
+                            cuser = UserCustom.objects.get(user_id__exact=user.pk)
+                            trans = Transaction().create(data)
+                            trans.date = datetime.now()
+
                             card = Card.objects.get(code=card_code, org=org_id)
+
+                            trans.bonus_before = card.bonus
+
+                            # пишем статистику
+                            trans.org = cuser.org
+                            trans.card = card
+                            trans.sum = 0
+                            trans.bonus_reduce = float(data['value'])
+                            trans.type = t_type
+                            trans.save()
+
                             card.bonus -= float(data['value'])
                             card.save()
                             return HttpResponse(data['value'])
@@ -115,3 +146,4 @@ def apiRemBonusToCard(request, org_id, card_code, salt):
                 return HttpResponse(status='503')
         else:
             return HttpResponse(status='503')
+

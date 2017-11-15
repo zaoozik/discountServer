@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'api',
     'users',
     'core',
+    'transactions',
 ]
 
 MIDDLEWARE = [
@@ -69,7 +70,12 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
-        },
+            'libraries':{
+                           'discountServer_extras': 'discountServer.templatetags.discountServer_extras',
+
+                            }
+                    },
+
     },
 ]
 
