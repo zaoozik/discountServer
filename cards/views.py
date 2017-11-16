@@ -18,17 +18,31 @@ import json
 
 @login_required(login_url='../login/')
 def listCards(request):
-    response = {}
-    form = CardForm()
-    template = loader.get_template('list_cards.html')
-    user =UserCustom.objects.get(user_id__exact=request.user.pk)
-
-    if user.org is None:
-        return HttpResponse(template.render(response, request))
-    cards = Card.objects.filter(org__exact=user.org)
-    if cards is not None:
-        response = {"cards": cards, "form": form}
-        return HttpResponse(template.render(response, request))
+    if request.method=="GET":
+        response = {}
+        form = CardForm()
+        template = loader.get_template('list_cards.html')
+        user =UserCustom.objects.get(user_id__exact=request.user.pk)
+        if user.org is None:
+            return HttpResponse(template.render(response, request))
+        if "deleted" in request.GET:
+            cards = Card.objects.filter(org__exact=user.org)
+        else:
+            cards = Card.objects.filter(org__exact=user.org, deleted__exact='n')
+        if "search" in request.GET:
+            phrase = request.GET["search"]
+            try:
+                a = int(phrase)
+                is_digit = True
+            except:
+                is_digit = False
+            if is_digit:
+                cards = cards.filter(code__exact=phrase)
+            else:
+                cards = cards.filter(holder_name__contains=phrase)
+        if cards is not None:
+            response = {"cards": cards, "form": form}
+            return HttpResponse(template.render(response, request))
 
 
 @login_required(login_url='./login/')
@@ -38,17 +52,20 @@ def maintenance(request):
         post = request.POST
         user = UserCustom.objects.get(user_id__exact=request.user.pk)
         if "cmd" in post:
-            if post["cmd"] == "add":  # добавление новой карты
+            if post["cmd"] == "save":  # сохранение карты
                 if "data" in post:
                     data = json.loads(post["data"])
                     try:
                         form = CardForm(data)
                         if form.is_valid():
-                            new_card = Card()
-                            new_card.code = form.cleaned_data['code']
-                            new_card.holder_name = form.cleaned_data['holder_name']
-                            new_card.org=user.org
-                            new_card.save()
+                            try:
+                                card = Card.objects.get(code__exact=form.cleaned_data['code'])
+                            except ObjectDoesNotExist as e:
+                                card = Card()
+                            card.code = form.cleaned_data['code']
+                            card.holder_name = form.cleaned_data['holder_name']
+                            card.org=user.org
+                            card.save()
                             response = {"result": "ok"}
                             return HttpResponse(json.dumps(response), content_type="application/json")
                     except:
@@ -75,6 +92,21 @@ def maintenance(request):
                     except Exception as err:
                         response = {"result": "error", "msg": err}
                         return HttpResponse(json.dumps(response), content_type="application/json")
-
+            if post["cmd"] == "delete":  # получение данных по карте
+                if "data" in post:
+                    data = json.loads(post["data"])
+                    try:
+                        for code in data:
+                            card = Card.objects.filter(code__exact=code,
+                                                   org_id__exact=user.org.pk
+                                                   ).get()
+                            card.deleted = 'y'
+                            card.save()
+                        response = {"result": "ok", "data": data}
+                        response = json.dumps(response)
+                        return HttpResponse(response, content_type="application/json")
+                    except Exception as err:
+                        response = {"result": "error", "msg": err}
+                        return HttpResponse(json.dumps(response), content_type="application/json")
 
 

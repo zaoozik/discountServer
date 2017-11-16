@@ -25,7 +25,7 @@ SECRET_KEY = 'vjzd2_yhidu!_%468+-0^!)7%f%1ypm=-@g=6s^@z47!y&!zs)'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['192.168.0.202',]
 
 
 # Application definition

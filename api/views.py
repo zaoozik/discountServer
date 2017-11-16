@@ -7,11 +7,12 @@ from transactions.models import Transaction
 from core.models import DiscountPlan
 from django.contrib.auth import authenticate, login, logout
 from datetime import datetime
+from django.utils.decorators import method_decorator
 
 
 # Create your views here.
 @csrf_exempt
-def apiGetCard(request, org_id, card_code, salt):
+def apiGetCardBonus(request, org_id, card_code, salt):
     if request.method == 'POST':
         data = request.POST
         if ('username' in data) and ('password' in data):
@@ -29,6 +30,28 @@ def apiGetCard(request, org_id, card_code, salt):
                 return HttpResponse(status='503')
         else:
             return HttpResponse(status='503')
+
+
+@csrf_exempt
+def apiGetCardDiscount(request, org_id, card_code, salt):
+    if request.method == 'POST':
+        data = request.POST
+        if ('username' in data) and ('password' in data):
+            user = authenticate(username=data['username'], password=data['password'])
+            if user is not None:
+                if user.is_active:
+                    try:
+                        card = Card.objects.get(code=card_code, org=org_id)
+                        return HttpResponse(card.discount, status='200')
+                    except ObjectDoesNotExist as e:
+                        return HttpResponse(status='404')
+                else:
+                    return HttpResponse(status='503')
+            else:
+                return HttpResponse(status='503')
+        else:
+            return HttpResponse(status='503')
+
 
 
 @csrf_exempt
@@ -147,3 +170,27 @@ def apiRemCardBonus(request, org_id, card_code, salt):
         else:
             return HttpResponse(status='503')
 
+
+@csrf_exempt
+def apiGetDiscountPlan(request, salt):
+    if request.method == 'POST':
+        data = request.POST
+        if ('username' in data) and ('password' in data):
+            user = authenticate(username=data['username'], password=data['password'])
+            if user is not None:
+                if user.is_active:
+                    try:
+                        cuser = UserCustom.objects.get(user_id__exact=user.pk)
+                        d_plan = DiscountPlan.objects.get(org_id__exact=cuser.org.pk)
+                        algorithm = d_plan.algorithm
+                        return HttpResponse(algorithm)
+
+                    except ObjectDoesNotExist as e:
+                        return HttpResponse(status='404')
+                else:
+                    return HttpResponse(status='503')
+            else:
+                return HttpResponse(status='503')
+        else:
+            return HttpResponse(status='503')
+    return HttpResponse(status='503')

@@ -18,11 +18,12 @@ function init()
 
 }
 
-
+var DISCOUNT_PLAN = null;
 var discount = -1;
 var bonus = 0;
 var payValue = 0;
 var card_code = 0;
+var SERVER = "http://192.168.0.202/";
 
 //Настройки скрипта
 var max_bonus_percentage = 30;
@@ -30,9 +31,28 @@ var ORG_ID = "1";
 var USER_LOGIN = "k_igumenov";
 var USER_PASSWORD = "yb[ezct,t";
 
-
 // Эту функцию следует указать в маркетинговой акции в качестве функции вычисления рублевой скидки
-function addBonusPay(Doc)
+function marketingAction()
+{
+ if (DISCOUNT_PLAN == 'bonus')
+    {
+     addBonusPay();
+    }
+ else if (DISCOUNT_PLAN == 'discount')
+      {
+         addDiscountPay();
+      }
+}
+
+
+function addDiscountPay()
+{
+  return bonus;
+}
+
+
+
+function addBonusPay()
 {
   //frontol.actions.showMessage("Бонусных накоплений: " +bonus);
   var bonus_current;
@@ -105,6 +125,61 @@ function afterClose()
 }
 
 
+function getDiscountPlan()
+{
+     var xhr = new ActiveXObject("MSXML2.XMLHTTP");
+     var salt = Math.random();
+     xhr.open("POST", SERVER+"api/get_plan/"+ salt+"/", true);
+     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+     var data = "username="+USER_LOGIN;
+     data+= "&password="+USER_PASSWORD;
+     xhr.send(data);
+     var plan = '';
+     while(xhr.readyState != 4){
+        frontol.actions.wait("Идет запрос к дисконтному серверу", 1);
+     }
+     if(xhr.status === 200) {
+        try{
+            plan = xhr.responseText;
+            if (plan == 'discount')
+            {
+               DISCOUNT_PLAN = plan
+               return true;
+            }  else if (plan == 'bonus')
+            {
+               DISCOUNT_PLAN = plan
+               return true;
+             }
+             else
+             {
+                 frontol.actions.showError("Дисконтная программа не найдена");
+                 return false;
+            }
+        }
+        catch(e){
+            frontol.actions.showError(e);
+            return null;
+        }
+     }
+     else if(xhr.status === 404)
+     {
+          frontol.actions.showError("Дисконтная программа не найдена!");
+          return false;
+     }
+      else if(xhr.status === 503)
+     {
+          frontol.actions.showError("Проверьте параметры доступа и действие подписки");
+          return false;
+     }
+     else
+     {
+        frontol.actions.showError("Ошибка получения данных с дисконтного сервиса");
+        return false;
+     }
+}
+
+
+
 function getCardBonus(Card)
 {
       card_code = Card.value;
@@ -114,11 +189,15 @@ function getCardBonus(Card)
           frontol.actions.showError("Карта клиента уже введена! Воспользуйтесь кнопкой отмены введенных карт.");
           return null;
       }
+      if (! getDiscountPlan())
+      {
+             return null;
+      }
 
       payValue=0;
       var xhr = new ActiveXObject("MSXML2.XMLHTTP");
       var salt = Math.random();
-     xhr.open("POST", "http://127.0.0.1:8000/api/cards/"+ORG_ID+"_"+card_code+"_" + salt+"/", true);
+     xhr.open("POST", SERVER+"api/cards/"+DISCOUNT_PLAN+"/"+ORG_ID+"_"+card_code+"_" + salt+"/", true);
      //xhr.open("POST", "http://127.0.0.1:8000/api/cards/1_0001_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "username="+USER_LOGIN;
@@ -131,9 +210,17 @@ function getCardBonus(Card)
      if(xhr.status === 200) {
         try{
             Disc = new Number(parseFloat(xhr.responseText));
-            frontol.actions.showMessage("Накопления на карте: "+Disc);
+            if (DISCOUNT_PLAN == 'bonus')
+                {
+                frontol.actions.showMessage("Накопления на карте: "+Disc);
+                   }
+                    else if (DISCOUNT_PLAN == 'discount')
+                    {
+                     frontol.actions.showMessage("Скидка: "+Disc + "%");
+                      }
+
             bonus = Disc;
-            return discount;
+            return ;
         }
         catch(e){
             frontol.actions.showError(e);
@@ -170,8 +257,8 @@ function addCardAccum(value)
     var shop = frontol.shopNumber;
     var workplace = frontol.codeWorkplace;
 
-     xhr.open("POST", "http://127.0.0.1:8000/api/cards/add_accum/"+ORG_ID+"_"+card_code+"_" + salt+"/", true);
-     //xhr.open("POST", "http://127.0.0.1:8000/api/cards/add_accum/1_0001_" + salt+"/", true);
+     xhr.open("POST", SERVER+"api/cards/add_accum/"+ORG_ID+"_"+card_code+"_" + salt+"/", true);
+     //xhr.open("POST", SERVER+"api/cards/add_accum/1_0001_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "username="+USER_LOGIN;
      data+= "&password="+USER_PASSWORD;
@@ -210,7 +297,7 @@ function remCardBonus(val)
 {
     var xhr = new ActiveXObject("MSXML2.XMLHTTP");
        var salt = Math.random();
-     xhr.open("POST", "http://127.0.0.1:8000/api/cards/rem_bonus/"+ORG_ID+"_"+card_code+"_" + salt+"/", true);
+     xhr.open("POST", SERVER+"api/cards/rem_bonus/"+ORG_ID+"_"+card_code+"_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "username="+USER_LOGIN;
      data+= "&password="+USER_PASSWORD;

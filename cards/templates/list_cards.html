@@ -1,18 +1,28 @@
 {% extends 'main.html' %}
 {% block 'content' %}
 
-<div class = "row"  id="toolbox" style="margin-bottom: 20px;">
-    <div class="col-sm-2">
-        <button class="btn btn-success" id="addCardButton" data-toggle="modal" data-target="#CardModal">Добавить</button>
-    </div>
-    <div class="col-sm-2">
-        <button class="btn btn-danger " onclick="">Удалить</button>
+
+
+    <div class="form-group row">
+        <div class="col-5 ">
+            <button class="btn btn-success btn-sm" id="addCardButton" data-toggle="modal" data-target="#CardModal"><i class="fa fa-credit-card" aria-hidden="true"></i> Добавить</button>
+            <button class="btn btn-danger btn-sm"  onclick="deleteCard();"><i class="fa fa-trash-o" aria-hidden="true"></i> Удалить</button>
+            <label class="form-check-label form-control-sm">
+                 <input class="form-check-input form-control-sm" type="checkbox" id="showDeleted" onchange="showDeleted();"> Показать удаленные
+            </label>
+        </div>
+        <div class="col-5">
+            <input type="text" id="search" class="form-control form-control-sm" placeholder="Код карты или ФИО владельца">
+
+        </div>
+        <div class="col-2">
+            <button class="btn btn-primary btn-sm" onclick="search();"><i class="fa fa-search" aria-hidden="true"></i> Поиск</button>
+        </div>
     </div>
 
-    <input type="search">
-    <button role="button">Поиск</button>
 
-</div>
+
+
 
     <table class="table">
         <tr>
@@ -23,9 +33,9 @@
             <th></th>
         </tr>
         {% for card in cards %}
-        <form id="{{ card.code }}">
-     <tr>
-         <td><input class="form-check-input" type="checkbox" id="check_{{card.code}}"></td>
+        <form>
+     <tr {% if card.deleted == 'y' %} style="color: red; text-decoration:line-through;" {% endif %} >
+         <td><input class="form-check-input cardcode" type="checkbox" id="{{card.code}}"></td>
          <td>{{ card.code }}</td>
          <td>{{ card.accumulation}}</td>
          <td>{{ card.holder_name}}</td>
@@ -41,7 +51,7 @@
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Добавление карты</h5>
+        <h5 class="modal-title">Карта</h5>
         <button type="button" class="close"  onclick="clearForm();" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -53,7 +63,7 @@
           </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-primary" onclick="saveNewCard();">Сохранить</button>
+        <button type="button" class="btn btn-primary" onclick="saveCard();">Сохранить</button>
         <button type="button" class="btn btn-secondary" onclick="clearForm();" data-dismiss="modal">Отмена</button>
       </div>
     </div>
@@ -87,15 +97,15 @@
             buffer+=String.fromCharCode(e.keyCode);}
 });
 
-function saveNewCard(){
+function saveCard(){
     var code= $("#id_code").val();
     var holder_name = $("#id_holder_name").val();
     var card_data = {"code": code,
                         "holder_name": holder_name}
-    var cmd = "add";
+    var cmd = "save";
 
     $.ajax({
-        url: '../cards/maintenance/',
+        url: '/cards/maintenance/',
         type: "POST",
         data: {
           "cmd": cmd,
@@ -105,7 +115,7 @@ function saveNewCard(){
         success: function (data) {
           if (data.result) {
             if (data.result == "ok"){
-                window.location.href = '../cards/';
+                window.location.href = window.location.href;
             }
             else
             {
@@ -123,16 +133,16 @@ function clearForm(){
             $('#id_accumulation').val(0);
             $('#id_bonus').val(0);
             $('#id_discount').val(0);
-            }
+}
 
-
-function getCard(card_code){
+function getCard(card_code)
+{
     var card_data = {"code": card_code}
     var cmd = "get";
     var cData;
 
     $.ajax({
-        url: '../cards/maintenance/',
+        url: '/cards/maintenance/',
         type: "POST",
         data: {
           "cmd": cmd,
@@ -157,10 +167,67 @@ function getCard(card_code){
          }
         }
       });
+}
+
+function deleteCard(){
+
+    var select = $('.cardcode:checked');
+    if (select.length == 0)
+    {return;}
+
+    var card_codes = [];
+
+    $.each(select, function(i, item){
+     card_codes[card_codes.length] = item.attributes["id"].value;
+    }
+    );
 
 
+    var cmd = "delete";
+
+    $.ajax({
+        url: '/cards/maintenance/',
+        type: "POST",
+        data: {
+          "cmd": cmd,
+          "data": JSON.stringify(card_codes)
+        },
+        dataType: "json",
+        success: function (data) {
+          if (data.result) {
+            if (data.result == "ok"){
+                window.location.href = '../cards/';
+            }
+            else
+            {
+               alert("Ошибка!");
+            }
+         }
+        }
+      });
 
 }
+$(document).ready(function(){
+    if (window.location.href== (window.location.origin+"/cards/?deleted"))
+    {
+        $('#showDeleted').prop('checked', true);
+    }
+});
+
+function showDeleted()
+{
+    if ($('#showDeleted:checked').length >0){
+    window.location.href= "/cards/?deleted";}
+    else {
+    window.location.href= window.location.origin+"/cards/";}
+}
+
+function search(){
+    var phrase = $('#search').val();
+    window.location.href= window.location.href+"&search="+phrase;
+    }
+
+
 
 </script>
 
