@@ -19,7 +19,7 @@ function init()
 }
 
 var DISCOUNT_PLAN = null;
-var discount = -1;
+var discount = 0;
 var bonus = 0;
 var payValue = 0;
 var card_code = 0;
@@ -31,27 +31,15 @@ var ORG_ID = "1";
 var USER_LOGIN = "k_igumenov";
 var USER_PASSWORD = "yb[ezct,t";
 
-// Эту функцию следует указать в маркетинговой акции в качестве функции вычисления рублевой скидки
-function marketingAction()
-{
- if (DISCOUNT_PLAN == 'bonus')
-    {
-     addBonusPay();
-    }
- else if (DISCOUNT_PLAN == 'discount')
-      {
-         addDiscountPay();
-      }
-}
 
-
+// Эту функцию следует указать в маркетинговой акции в качестве функции вычисления процентной скидки
 function addDiscountPay()
 {
-  return bonus;
+  return discount;
 }
 
 
-
+// Эту функцию следует указать в маркетинговой акции в качестве функции вычисления рублевой скидки
 function addBonusPay()
 {
   //frontol.actions.showMessage("Бонусных накоплений: " +bonus);
@@ -84,7 +72,7 @@ function addBonusPay()
             frontol.actions.showMessage("Сумма списания превышает возможную сумму. Отмена скидок!");
             return null;
       }
-
+      bonus = bonus - payValue;
       return parseFloat(payValue);
 
 
@@ -100,6 +88,7 @@ function addBonusPay()
 
 function beforeClose()
 {
+  frontol.currentDocument.recalculateAllDiscounts();
          //Списываем бонусы
      if (payValue > 0 )
      {
@@ -110,12 +99,10 @@ function beforeClose()
             else
             {
              frontol.actions.showError("Невозможно списать бонусы!");
-             frontol.actions.recalculateAllDiscounts();
+             frontol.currentDocument.recalculateAllDiscounts();
               return null;
                }
        }
-
-     // addCardAccum(frontol.currentDocument.totalSum);
 }
 
 
@@ -195,6 +182,8 @@ function getCardBonus(Card)
       }
 
       payValue=0;
+      bonus=0;
+      discount=0;
       var xhr = new ActiveXObject("MSXML2.XMLHTTP");
       var salt = Math.random();
      xhr.open("POST", SERVER+"api/cards/"+DISCOUNT_PLAN+"/"+ORG_ID+"_"+card_code+"_" + salt+"/", true);
@@ -213,13 +202,15 @@ function getCardBonus(Card)
             if (DISCOUNT_PLAN == 'bonus')
                 {
                 frontol.actions.showMessage("Накопления на карте: "+Disc);
+                 bonus = Disc;
                    }
                     else if (DISCOUNT_PLAN == 'discount')
                     {
                      frontol.actions.showMessage("Скидка: "+Disc + "%");
+                         discount = Disc;
                       }
 
-            bonus = Disc;
+
             return ;
         }
         catch(e){

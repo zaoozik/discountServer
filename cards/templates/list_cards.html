@@ -1,50 +1,75 @@
 {% extends 'main.html' %}
 {% block 'content' %}
 
+<style>
+    .scroll-data{
+        overflow: hidden;
+        overflow-y: scroll;
+    };
+</style>
 
 
-    <div class="form-group row">
+<!--<div id = 'toolbox' style="position: fixed; z-index: 999999999; background-color: white; width: inherit;">-->
+<div style="">
+<div class="form-group row">
         <div class="col-5 ">
             <button class="btn btn-success btn-sm" id="addCardButton" data-toggle="modal" data-target="#CardModal"><i class="fa fa-credit-card" aria-hidden="true"></i> Добавить</button>
             <button class="btn btn-danger btn-sm"  onclick="deleteCard();"><i class="fa fa-trash-o" aria-hidden="true"></i> Удалить</button>
-            <label class="form-check-label form-control-sm">
-                 <input class="form-check-input form-control-sm" type="checkbox" id="showDeleted" onchange="showDeleted();"> Показать удаленные
-            </label>
         </div>
         <div class="col-5">
             <input type="text" id="search" class="form-control form-control-sm" placeholder="Код карты или ФИО владельца">
 
+
         </div>
         <div class="col-2">
-            <button class="btn btn-primary btn-sm" onclick="search();"><i class="fa fa-search" aria-hidden="true"></i> Поиск</button>
+            <button class="btn btn-primary" onclick="dataUpdate();"><i class="fa fa-filter" aria-hidden="true"></i> Фильтр</button>
         </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-5 ">
+
+        </div>
+        <div class="col-5">
+                <small>Сортировать по</small>
+                <select id="sort"class="form-control form-control-sm">
+                    <option value="code">КОД</option>
+                    <option value="holder_name">ФИО</option>
+                    <option value="accumulation">НАКОПЛЕНИЯ</option>
+                </select>
+                     <label class="form-check-label form-control-sm">
+                 <input class="form-check-input form-control-sm" type="checkbox" id="showDeleted"> Показать удаленные
+            </label>
+        </div>
+        <div class="col-2">
+             <button class="btn btn-primary" onclick="clearFilter();"><i class="fa fa-repeat" aria-hidden="true"></i> Сбросить</button>
+        </div>
+
     </div>
 
 
 
+    <div class="form-group row pull-right">
+            <small id="total"></small>
+    </div>
+</div>
 
-
-    <table class="table">
-        <tr>
+<div  id="data">
+    <table id="scrollData" class="table">
+        <thead>
+        <tr >
             <th></th>
             <th>КОД</th>
             <th>НАКОПЛЕНИЯ</th>
             <th>ФИО</th>
             <th></th>
         </tr>
-        {% for card in cards %}
-        <form>
-     <tr {% if card.deleted == 'y' %} style="color: red; text-decoration:line-through;" {% endif %} >
-         <td><input class="form-check-input cardcode" type="checkbox" id="{{card.code}}"></td>
-         <td>{{ card.code }}</td>
-         <td>{{ card.accumulation}}</td>
-         <td>{{ card.holder_name}}</td>
-         <td><button data-toggle="modal" data-target="#CardModal" type="button" onclick="getCard('{{card.code}}');" class="fa fa-eye" aria-hidden="true" title="Просмотр"></button></td>
-     </tr>
-            </form>
-        {% endfor %}
+        </thead>
+        <tbody id="tbody">
 
+
+        </tbody>
     </table>
+</div>
 
 
 <div class="modal fade" id="CardModal">
@@ -71,163 +96,7 @@
 </div>
 
 
-<script>
-    var buffer= '';
-
-
-    $('html').keydown(function(e){ //отлавливаем нажатие клавиш
-
-        if (e.keyCode == 13) {
-            if (! $('#addCardModal').hasClass("show"))
-            {
-            $(document).click();
-            $('#addCardButton').click();}
-
-            $('#addCardCode').val(buffer);
-            $("#one").on("input", function() {
-
-                setTimeout(function(){
-                $("#addCardCode").focus();
-                    }, 2);
-
-});
-            buffer= '';
-            }
-    if (is_numeric(String.fromCharCode(e.keyCode))){
-            buffer+=String.fromCharCode(e.keyCode);}
-});
-
-function saveCard(){
-    var code= $("#id_code").val();
-    var holder_name = $("#id_holder_name").val();
-    var card_data = {"code": code,
-                        "holder_name": holder_name}
-    var cmd = "save";
-
-    $.ajax({
-        url: '/cards/maintenance/',
-        type: "POST",
-        data: {
-          "cmd": cmd,
-          "data": JSON.stringify(card_data)
-        },
-        dataType: "json",
-        success: function (data) {
-          if (data.result) {
-            if (data.result == "ok"){
-                window.location.href = window.location.href;
-            }
-            else
-            {
-               alert("Ошибка!");
-            }
-         }
-        }
-      });
-
-}
-
-function clearForm(){
-          $('#id_code').val('');
-           $('#id_holder_name').val('');
-            $('#id_accumulation').val(0);
-            $('#id_bonus').val(0);
-            $('#id_discount').val(0);
-}
-
-function getCard(card_code)
-{
-    var card_data = {"code": card_code}
-    var cmd = "get";
-    var cData;
-
-    $.ajax({
-        url: '/cards/maintenance/',
-        type: "POST",
-        data: {
-          "cmd": cmd,
-          "data": JSON.stringify(card_data)
-        },
-        dataType: "json",
-        success: function (response) {
-          if (response.result) {
-            if (response.result == "ok"){
-                cData = response.data;
-                $('#id_code').val(cData.code);
-                $('#id_holder_name').val(cData.holder_name);
-                $('#id_accumulation').val(cData.accumulation);
-                $('#id_bonus').val(cData.bonus);
-                $('#id_discount').val(cData.discount);
-
-            }
-            else
-            {
-               alert(data.msg);
-            }
-         }
-        }
-      });
-}
-
-function deleteCard(){
-
-    var select = $('.cardcode:checked');
-    if (select.length == 0)
-    {return;}
-
-    var card_codes = [];
-
-    $.each(select, function(i, item){
-     card_codes[card_codes.length] = item.attributes["id"].value;
-    }
-    );
-
-
-    var cmd = "delete";
-
-    $.ajax({
-        url: '/cards/maintenance/',
-        type: "POST",
-        data: {
-          "cmd": cmd,
-          "data": JSON.stringify(card_codes)
-        },
-        dataType: "json",
-        success: function (data) {
-          if (data.result) {
-            if (data.result == "ok"){
-                window.location.href = '../cards/';
-            }
-            else
-            {
-               alert("Ошибка!");
-            }
-         }
-        }
-      });
-
-}
-$(document).ready(function(){
-    if (window.location.href== (window.location.origin+"/cards/?deleted"))
-    {
-        $('#showDeleted').prop('checked', true);
-    }
-});
-
-function showDeleted()
-{
-    if ($('#showDeleted:checked').length >0){
-    window.location.href= "/cards/?deleted";}
-    else {
-    window.location.href= window.location.origin+"/cards/";}
-}
-
-function search(){
-    var phrase = $('#search').val();
-    window.location.href= window.location.href+"&search="+phrase;
-    }
-
-
+<script src="/static/js/cards.js">
 
 </script>
 
