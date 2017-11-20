@@ -16,14 +16,16 @@ Including another URLconf
 from django.conf.urls import url, include
 from django.contrib import admin
 from discountServer import views
+from transactions import views as t_views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^login/$', views.signIn, name='signIn'),
     url(r'^logout/$', views.signOff, name='signOff'),
     url(r'^settings/$', views.settings, name='settings'),
-    url(r'^transactions/$', views.transactions, name='transactions'),
+    url(r'^transactions/$', t_views.listTrans, name='listTrans'),
     url(r'^settings/save/$', views.settingsSave, name='settingsSave'),
+    url(r'^settings/frontol/$', views.exportFrontolSettings, name='exportFrontolSettings'),
     url(r'^cards/', include('cards.urls')),
     url(r'^api/', include('api.urls')),
     url(r'^', views.index),

@@ -64,6 +64,9 @@ def signOff(request):
 def settings(request):
     if request.method=='GET':
         user = UserCustom.objects.get(user_id__exact=request.user.pk)
+        user.init_frontol_access_key()
+        key = user.frontol_access_key
+        user.save()
         add=''
         try:
             d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
@@ -76,7 +79,7 @@ def settings(request):
         except:
             form = BonusForm()
             add = '. Внимание! Сохраните настройки!'
-        response = {'form': form, 'org_name': user.org.name + add}
+        response = {'form': form, 'org_name': user.org.name + add, 'key': key, 'active': user.active_to}
         template = loader.get_template('settings.html')
         return HttpResponse(template.render(response, request))
 
@@ -139,15 +142,14 @@ def settingsSave(request):
                     template = loader.get_template('settings.html')
                     return redirect('/settings/')
 
-
 @login_required
-def transactions(request):
-    if request.method == 'GET':
-        user = UserCustom.objects.get(user_id__exact=request.user.pk)
-        try:
-            trans = Transaction.objects.filter(org_id__exact=user.org.pk)
-        except Exception as err:
-            trans= {}
-        response = {'transactions': trans, 'form': ControlsForm()}
-        template = loader.get_template('transactions.html')
-        return HttpResponse(template.render(response, request))
+def exportFrontolSettings(request):
+    if request.method=="GET":
+        cuser = UserCustom.objects.get(user_id__exact=request.user.pk)
+        with open('D:/projects/discountServer\discountServer/static/documents/vti_discount.xch', 'r', encoding='cp1251') as set_file:
+           buffer = set_file.read()
+        str = 'var ACCESS_KEY = "%s";' % cuser.frontol_access_key
+        buffer = buffer.replace('#ACCESS_KEY', str, 1)
+        response = HttpResponse(buffer.encode(encoding='cp1251'), content_type="text/csv")
+        response['Content-Disposition'] = 'attachment; filename="frontol_settings_%s.xch"' % cuser.user.username
+        return response

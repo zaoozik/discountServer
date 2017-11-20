@@ -2,12 +2,18 @@
 {% block 'content' %}
 <h3>Настройки</h3>
 <div class="jumbotron">
-    <h3>{{org_name}}</h3>
+    <h5> Организация - {{org_name}}</h5>
+    <p>Активность до: {{active}}</p>
+    <hr />
+    <p>Ключ доступа FRONTOL - {{key}}</p>
+    <p><a href="/settings/frontol/"><i class="fa fa-download" aria-hidden="true"></i> Файл настроек FRONTOL</a></p>
+    <hr />
     <form  id="bonus-form" class="form-group" method="POST" action="../settings/save/" >
             {% csrf_token %}
                 {{ form }}
 
      <p class="text-center">
+
          </br>
         <button type="submit" class="btn btn-lg">Сохранить</button>
      </p>

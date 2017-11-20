@@ -38,3 +38,9 @@ class Transaction(models.Model):
         if 'shop' in values:
             self.shop = values['shop']
         return self
+
+    def return_type(self):
+        if self.type == 'assume':
+            return "Начисление"
+        elif self.type == 'reduce':
+            return "Списание"

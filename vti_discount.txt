@@ -26,8 +26,7 @@ var card_code = 0;
 var SERVER = "http://192.168.0.202/";
 
 //Настройки скрипта
-var max_bonus_percentage = 30;
-var ORG_ID = "1";
+var max_bonus_percentage = 100;
 var USER_LOGIN = "k_igumenov";
 var USER_PASSWORD = "yb[ezct,t";
 
@@ -186,7 +185,7 @@ function getCardBonus(Card)
       discount=0;
       var xhr = new ActiveXObject("MSXML2.XMLHTTP");
       var salt = Math.random();
-     xhr.open("POST", SERVER+"api/cards/"+DISCOUNT_PLAN+"/"+ORG_ID+"_"+card_code+"_" + salt+"/", true);
+     xhr.open("POST", SERVER+"api/cards/"+DISCOUNT_PLAN+"/"+card_code+"_" + salt+"/", true);
      //xhr.open("POST", "http://127.0.0.1:8000/api/cards/1_0001_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "username="+USER_LOGIN;
@@ -248,7 +247,7 @@ function addCardAccum(value)
     var shop = frontol.shopNumber;
     var workplace = frontol.codeWorkplace;
 
-     xhr.open("POST", SERVER+"api/cards/add_accum/"+ORG_ID+"_"+card_code+"_" + salt+"/", true);
+     xhr.open("POST", SERVER+"api/cards/add_accum/"+card_code+"_" + salt+"/", true);
      //xhr.open("POST", SERVER+"api/cards/add_accum/1_0001_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "username="+USER_LOGIN;
@@ -288,7 +287,7 @@ function remCardBonus(val)
 {
     var xhr = new ActiveXObject("MSXML2.XMLHTTP");
        var salt = Math.random();
-     xhr.open("POST", SERVER+"api/cards/rem_bonus/"+ORG_ID+"_"+card_code+"_" + salt+"/", true);
+     xhr.open("POST", SERVER+"api/cards/rem_bonus/"+card_code+"_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "username="+USER_LOGIN;
      data+= "&password="+USER_PASSWORD;

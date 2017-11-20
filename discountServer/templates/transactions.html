@@ -2,15 +2,57 @@
 {% load discountServer_extras %}
 {% block 'content' %}
 <h3>История операций</h3>
-<div class="row">
-    <form class="form-inline" id="controls-form" method="post">
-        {% csrf_token %}
-        {{ form }}
-        <button type="submit" class="btn btn-default">Фильтровать</button>
-    </form>
+<div class="form-group row">
+    <div class="col-3">
+        <label for = "dateFrom">Начало периода</label>
+        <input class="form-control frorm-control-sm" type="text" id="dateFrom" >
+        <label for = "dateTo">Конец периода</label>
+        <input class="form-control frorm-control-sm" type="text" id="dateTo" >
+        <label for = "type">Тип операции</label>
+         <select class="form-control frorm-control-sm" name="type" id="type">
+            <option value="">Любой</option>
+            <option value="assume">Начисление</option>
+            <option value="reduce">Списание</option>
+        </select>
+    </div>
+
+     <div class="col-3">
+         <label for = "card">Номер карты</label>
+         <input class="form-control frorm-control-sm" type="text" id="card">
+                  <label for = "workplace">Рабочее место</label>
+        <input class="form-control frorm-control-sm" type="text" id="workplace" >
+         <label for = "session">Номер смены</label>
+        <input class="form-control frorm-control-sm" type="text" id="session" >
+     </div>
+     <div class="col-3">
+         <label for = "doc_close_user">Пользователь</label>
+         <input class="form-control frorm-control-sm" type="text" id="doc_close_user">
+         <label for = "doc_number">Номер документа</label>
+        <input class="form-control frorm-control-sm" type="text" id="doc_number" >
+         <label for = "shop">Номер магазина</label>
+        <input class="form-control frorm-control-sm" type="text" id="shop" >
+
+    </div>
+    <div class="col-3" style="display: inline;">
+          <button onclick="dataUpdate();" class="btn btn-default btn-sm"><i class="fa fa-filter" aria-hidden="true"></i> Фильтр</button>
+         <button class="btn btn-default btn-sm" onclick="clearFilter();"><i class="fa fa-repeat" aria-hidden="true"></i> Сбросить</button>
+    </div>
 </div>
-<div data-spy="scroll" data-target="#navbar-example2" data-offset="0">
+
+
+<script>
+  $( function() {
+    $( "#dateTo" ).datepicker();
+    $( "#dateFrom" ).datepicker();
+  } );
+  </script>
+
+    <div class="form-group row pull-right">
+            <small id="total"></small>
+    </div>
+
     <table class="table table-striped table-sm" style="font-size: 11pt;">
+        <thead>
         <tr>
             <th>Дата/время</th>
             <th>Тип</th>
@@ -26,26 +68,12 @@
             <th>Пользователь</th>
 
         </tr>
-        {% for trans in transactions %}
-         <tr>
-             <td>{{trans.date|date:"Y-m-d"}} /{{ trans.date|time:"H:i" }}</td>
-             <td>{{trans.type|trans_type|default_if_none:"" }}</td>
-             <td>{{ trans.card.code }}</td>
-             <td>{{ trans.sum|default_if_none:''}}</td>
-             <td>{{ trans.bonus_before}}</td>
-             <td>{{ trans.bonus_add|default_if_none:""}}</td>
-             <td>{{ trans.bonus_reduce|default_if_none:""}}</td>
-             <td>{{ trans.shop|default_if_none:'' }}</td>
-             <td>{{ trans.workplace|default_if_none:''  }}</td>
-             <td>{{ trans.doc_number|default_if_none:'' }}</td>
-             <td>{{ trans.session|default_if_none:''  }}</td>
-             <td>{{ trans.doc_close_user|default_if_none:''  }}</td>
+        </thead>
+        <tbody id="tbody">
 
-
-         </tr>
-        {% endfor %}
+        </tbody>
 
     </table>
-</div>
 
+<script src="/static/js/transactions.js"></script>
 {% endblock %}

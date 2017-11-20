@@ -12,15 +12,18 @@ from django.utils.decorators import method_decorator
 
 # Create your views here.
 @csrf_exempt
-def apiGetCardBonus(request, org_id, card_code, salt):
+def apiGetCardBonus(request, card_code, salt):
     if request.method == 'POST':
         data = request.POST
-        if ('username' in data) and ('password' in data):
-            user = authenticate(username=data['username'], password=data['password'])
-            if user is not None:
-                if user.is_active:
+        if ('key' in data):
+            try:
+                cuser = UserCustom.objects.get(frontol_access_key__exact=data['key'])
+            except:
+                cuser = None
+            if cuser is not None:
+                if cuser.user.is_active:
                     try:
-                        card = Card.objects.get(code=card_code, org=org_id)
+                        card = Card.objects.get(code=card_code, org=cuser.org.pk, deleted='n')
                         return HttpResponse(card.bonus, status='200')
                     except ObjectDoesNotExist as e:
                         return HttpResponse(status='404')
@@ -33,15 +36,18 @@ def apiGetCardBonus(request, org_id, card_code, salt):
 
 
 @csrf_exempt
-def apiGetCardDiscount(request, org_id, card_code, salt):
+def apiGetCardDiscount(request, card_code, salt):
     if request.method == 'POST':
         data = request.POST
-        if ('username' in data) and ('password' in data):
-            user = authenticate(username=data['username'], password=data['password'])
-            if user is not None:
-                if user.is_active:
+        if ('key' in data):
+            try:
+                cuser = UserCustom.objects.get(frontol_access_key__exact=data['key'])
+            except:
+                cuser = None
+            if cuser is not None:
+                if cuser.user.is_active:
                     try:
-                        card = Card.objects.get(code=card_code, org=org_id)
+                        card = Card.objects.get(code=card_code, org=cuser.org.pk, deleted='n')
                         return HttpResponse(card.discount, status='200')
                     except ObjectDoesNotExist as e:
                         return HttpResponse(status='404')
@@ -55,21 +61,22 @@ def apiGetCardDiscount(request, org_id, card_code, salt):
 
 
 @csrf_exempt
-def apiAddAccumToCard(request, org_id, card_code, salt):
+def apiAddAccumToCard(request, card_code, salt):
     t_type = 'assume'
     if request.method == 'POST':
         data = request.POST
-        if ('username' in data) and ('password' in data):
-            user = authenticate(username=data['username'], password=data['password'])
-            if user is not None:
-                if user.is_active:
+        if ('key' in data):
+            try:
+                cuser = UserCustom.objects.get(frontol_access_key__exact=data['key'])
+            except:
+                cuser = None
+            if cuser is not None:
+                if cuser.user.is_active:
                     try:
                         if 'value' in data:
                             trans = Transaction().create(data)
                             trans.date = datetime.now()
-
-                            cuser = UserCustom.objects.get(user_id__exact=user.pk)
-                            card = Card.objects.get(code=card_code, org=org_id)
+                            card = Card.objects.get(code=card_code, org=cuser.org.pk)
 
                             trans.bonus_before = card.bonus
 
@@ -105,46 +112,23 @@ def apiAddAccumToCard(request, org_id, card_code, salt):
 
 
 @csrf_exempt
-def apiRemCardAccum(request, org_id, card_code, salt):
-    if request.method == 'POST':
-        data = request.POST
-        if ('username' in data) and ('password' in data):
-            user = authenticate(username=data['username'], password=data['password'])
-            if user is not None:
-                if user.is_active:
-                    try:
-                        if 'value' in data:
-                            card = Card.objects.get(code=card_code, org=org_id)
-                            card.accumulation -= float(data['value'])
-                            card.save()
-                            return HttpResponse(data['value'])
-                        else:
-                            return HttpResponse(status='404')
-                    except ObjectDoesNotExist as e:
-                        return HttpResponse(status='404')
-                else:
-                    return HttpResponse(status='503')
-            else:
-                return HttpResponse(status='503')
-        else:
-            return HttpResponse(status='503')
-
-@csrf_exempt
-def apiRemCardBonus(request, org_id, card_code, salt):
+def apiRemCardBonus(request, card_code, salt):
     t_type= 'reduce'
     if request.method == 'POST':
         data = request.POST
-        if ('username' in data) and ('password' in data):
-            user = authenticate(username=data['username'], password=data['password'])
-            if user is not None:
-                if user.is_active:
+        if ('key' in data):
+            try:
+                cuser = UserCustom.objects.get(frontol_access_key__exact=data['key'])
+            except:
+                cuser = None
+            if cuser is not None:
+                if cuser.user.is_active:
                     try:
                         if 'value' in data:
-                            cuser = UserCustom.objects.get(user_id__exact=user.pk)
                             trans = Transaction().create(data)
                             trans.date = datetime.now()
 
-                            card = Card.objects.get(code=card_code, org=org_id)
+                            card = Card.objects.get(code=card_code, org=cuser.org.pk)
 
                             trans.bonus_before = card.bonus
 
@@ -175,12 +159,14 @@ def apiRemCardBonus(request, org_id, card_code, salt):
 def apiGetDiscountPlan(request, salt):
     if request.method == 'POST':
         data = request.POST
-        if ('username' in data) and ('password' in data):
-            user = authenticate(username=data['username'], password=data['password'])
-            if user is not None:
-                if user.is_active:
+        if ('key' in data):
+            try:
+                cuser = UserCustom.objects.get(frontol_access_key__exact=data['key'])
+            except:
+                cuser = None
+            if cuser is not None:
+                if cuser.user.is_active:
                     try:
-                        cuser = UserCustom.objects.get(user_id__exact=user.pk)
                         d_plan = DiscountPlan.objects.get(org_id__exact=cuser.org.pk)
                         algorithm = d_plan.algorithm
                         return HttpResponse(algorithm)
