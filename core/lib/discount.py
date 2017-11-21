@@ -1,5 +1,7 @@
 import json
-from collections import OrderedDict
+from transactions.models import Transaction
+from core.models import Operations
+from datetime import datetime
 
 
 class DiscountParameters:
@@ -73,7 +75,6 @@ def count(value, card, json_str_parameters):
         assume_delta = float(parameters['zeroing_delta'])
     else:
         return None
-    card.accumulation += value
 
     rules = DiscountParameters().load(rules)
     next_discount = None
@@ -84,9 +85,22 @@ def count(value, card, json_str_parameters):
                 return card
             if next_discount[1] <= card.accumulation:
                 card.discount = next_discount[0]
+
+                trans = Transaction(
+                    org=card.org,
+                    card=card,
+                    date=datetime.now(),
+                    type=Operations.discount_recount,
+                    bonus_add=card.discount,
+                )
+                trans.save()
+
             else:
                 return card
         else:
             rules.next()
+
+
+
     return card
 

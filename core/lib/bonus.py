@@ -1,5 +1,7 @@
 import json
 from datetime import datetime
+from transactions.models import Transaction
+from core.models import Operations
 #
 # bonus_cost = None
 # min_transaction = None
@@ -20,9 +22,9 @@ def custom_round(value, rounding):
     return None
 
 
-def count (value, card, json_str_parameters):
+def count (value, card, d_plan, transaction):
     try:
-        parameters = json.loads(json_str_parameters)
+        parameters = json.loads(d_plan.parameters)
     except:
         return None
     if type(parameters) is not dict:
@@ -45,20 +47,29 @@ def count (value, card, json_str_parameters):
     else:
         return None
 
-    if 'assume_delta' in parameters:
-        assume_delta = float(parameters['zeroing_delta'])
-    else:
-        return None
-
     if 'round' in parameters:
         rounding = parameters['round']
     else:
         return None
 
-    card.accumulation += value
-
     if value < min_transaction:
         return card
 
+    trans = Transaction(
+        org=card.org,
+        card=card,
+        date=datetime.now(),
+        type=Operations.bonus_add,
+        bonus_before=card.bonus,
+        doc_number=transaction.doc_number,
+        session=transaction.session,
+        sum=transaction.sum,
+        shop=transaction.shop,
+        workplace=transaction.workplace
+    )
+
     card.bonus += custom_round((value / bonus_cost), rounding)
+    trans.bonus_add = card.bonus - trans.bonus_before
+    trans.save()
+
     return card

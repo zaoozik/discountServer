@@ -58,7 +58,7 @@ def listTrans(request):
                 total = len(trans)
                 if data["count"] > total:
                     data["count"] = total
-                trans = trans.order_by(selection_parameters["sort"]).all()[data["start"]:data["start"]+data["count"]]
+                trans = trans.order_by('-'+selection_parameters["sort"]).all()[data["start"]:data["start"]+data["count"]]
                 resp_cards=[]
                 for tran in trans:
                     resp_cards.append(

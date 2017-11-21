@@ -3,6 +3,12 @@ from orgs import models as org_models
 # Create your models here.
 
 class Card (models.Model):
+    type_choices=(
+        ('bonus', 'Бонусная'),
+        ('discount', 'Дисконтная'),
+        ('combo', 'Комбинированная')
+    )
+
     code = models.CharField(max_length=20, verbose_name='Код карты')
     accumulation = models.FloatField(default=0, verbose_name='Накопления')
     bonus = models.FloatField(default=0, verbose_name='Бонусы')
@@ -10,6 +16,10 @@ class Card (models.Model):
     holder_name = models.CharField(max_length=100, default='', verbose_name='ФИО владельца')
     org = models.ForeignKey(org_models.Org, on_delete=models.CASCADE, verbose_name='Организация')
     deleted = models.CharField(max_length=1, default='n', verbose_name='Признак удаления (y/n)')
+    type = models.CharField(max_length=17, default='bonus', choices=type_choices, verbose_name='Тип карты')
+    reg_date = models.DateField(null=True, verbose_name='Дата регистрации')
+    changes_date = models.DateField(null=True, verbose_name='Дата последних изменений')
+    last_transaction_date = models.DateField(null=True, verbose_name='Дата последней транзакции')
 
     def __str__(self):
         return self.org.name + "_" + self.code

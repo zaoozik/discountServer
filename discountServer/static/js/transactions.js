@@ -16,6 +16,15 @@
         "type": "",
     };
 
+    function emptyIfNull(val)
+    {
+        if ((val== null) || (val == 0)){
+        return "-"
+        } else {
+        return val;
+        }
+    }
+
     // Устанавливаем строку поиска
     $('#dateFrom').change(function(){
         selection_parameters["dateFrom"] = $(this).val();
@@ -106,18 +115,18 @@ function dataUpdate(){
 
                 */
                    var html = $('#tbody').append("<tr></tr>");
-                     $(html).append("<td>"+value["date"]+"</td>");
-                     $(html).append("<td>"+value["type"]+"</td>");
-                      $(html).append("<td>"+value["card"]+"</td>");
-                       $(html).append("<td>"+value["sum"]+"</td>");
-                        $(html).append("<td>"+value["bonus_before"]+"</td>");
-                         $(html).append("<td>"+value["bonus_add"]+"</td>");
-                          $(html).append("<td>"+value["bonus_reduce"]+"</td>");
-                           $(html).append("<td>"+value["shop"]+"</td>");
-                            $(html).append("<td>"+value["workplace"]+"</td>");
-                             $(html).append("<td>"+value["doc_number"]+"</td>");
-                              $(html).append("<td>"+value["session"]+"</td>");
-                               $(html).append("<td>"+value["doc_close_user"]+"</td>");
+                     $(html).append("<td>"+emptyIfNull(value["date"])+"</td>");
+                     $(html).append("<td>"+emptyIfNull(value["type"])+"</td>");
+                      $(html).append("<td>"+emptyIfNull(value["card"])+"</td>");
+                       $(html).append("<td>"+emptyIfNull(value["sum"])+"</td>");
+                        $(html).append("<td>"+emptyIfNull(value["bonus_before"])+"</td>");
+                         $(html).append("<td>"+emptyIfNull(value["bonus_add"])+"</td>");
+                          $(html).append("<td>"+emptyIfNull(value["bonus_reduce"])+"</td>");
+                           $(html).append("<td>"+emptyIfNull(value["shop"])+"</td>");
+                            $(html).append("<td>"+emptyIfNull(value["workplace"])+"</td>");
+                             $(html).append("<td>"+emptyIfNull(value["doc_number"])+"</td>");
+                              $(html).append("<td>"+emptyIfNull(value["session"])+"</td>");
+                               $(html).append("<td>"+emptyIfNull(value["doc_close_user"])+"</td>");
                 });
              start = start + count;
                     if (start > total)
@@ -182,18 +191,18 @@ if (elems_end)
 
                 */
                    var html = $('#tbody').append("<tr></tr>");
-                     $(html).append("<td>"+value["date"]+"</td>");
-                     $(html).append("<td>"+value["type"]+"</td>");
-                      $(html).append("<td>"+value["card"]+"</td>");
-                       $(html).append("<td>"+value["sum"]+"</td>");
-                        $(html).append("<td>"+value["bonus_before"]+"</td>");
-                         $(html).append("<td>"+value["bonus_add"]+"</td>");
-                          $(html).append("<td>"+value["bonus_reduce"]+"</td>");
-                           $(html).append("<td>"+value["shop"]+"</td>");
-                            $(html).append("<td>"+value["workplace"]+"</td>");
-                             $(html).append("<td>"+value["doc_number"]+"</td>");
-                              $(html).append("<td>"+value["session"]+"</td>");
-                               $(html).append("<td>"+value["doc_close_user"]+"</td>");
+                     $(html).append("<td>"+emptyIfNull(value["date"])+"</td>");
+                     $(html).append("<td>"+emptyIfNull(value["type"])+"</td>");
+                      $(html).append("<td>"+emptyIfNull(value["card"])+"</td>");
+                       $(html).append("<td>"+emptyIfNull(value["sum"])+"</td>");
+                        $(html).append("<td>"+emptyIfNull(value["bonus_before"])+"</td>");
+                         $(html).append("<td>"+emptyIfNull(value["bonus_add"])+"</td>");
+                          $(html).append("<td>"+emptyIfNull(value["bonus_reduce"])+"</td>");
+                           $(html).append("<td>"+emptyIfNull(value["shop"])+"</td>");
+                            $(html).append("<td>"+emptyIfNull(value["workplace"])+"</td>");
+                             $(html).append("<td>"+emptyIfNull(value["doc_number"])+"</td>");
+                              $(html).append("<td>"+emptyIfNull(value["session"])+"</td>");
+                               $(html).append("<td>"+emptyIfNull(value["doc_close_user"])+"</td>");
                 });
                 start = start + count;
                     if (start > total)

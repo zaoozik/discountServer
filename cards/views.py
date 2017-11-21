@@ -13,6 +13,7 @@ from django.template import loader
 from users.models import UserCustom
 from .forms import CardForm
 import json
+from datetime import datetime
 
 # Create your views here.
 
@@ -87,8 +88,6 @@ def listCards(request):
 
 
 
-
-
 @login_required(login_url='./login/')
 def maintenance(request):
     response = {}
@@ -108,6 +107,14 @@ def maintenance(request):
                                 card = Card()
                             card.code = form.cleaned_data['code']
                             card.holder_name = form.cleaned_data['holder_name']
+                            card.bonus = form.cleaned_data['bonus']
+                            card.discount = form.cleaned_data['discount']
+                            card.accumulation = form.cleaned_data['accumulation']
+                            card.type = form.cleaned_data['type']
+                            card.changes_date = datetime.now().date()
+                            if not card.reg_date:
+                                card.reg_date = datetime.now().date()
+                                card.last_transaction_date = datetime.now().date()
                             card.org=user.org
                             card.save()
                             response = {"result": "ok"}
@@ -122,12 +129,18 @@ def maintenance(request):
                         card = Card.objects.filter(code__exact=data["code"],
                                                    org_id__exact=user.org.pk
                                                    ).get()
+
+                        date_func = lambda a: '' if a is None else a.strftime('%Y-%m-%d')
                         data = {
                             "code": card.code,
                             "holder_name": card.holder_name,
                             "accumulation" : card.accumulation,
                             "bonus": card.bonus,
-                            "discount": card.discount
+                            "discount": card.discount,
+                            "type": card.type,
+                            "reg_date": date_func(card.reg_date),
+                            "changes_date": date_func(card.changes_date),
+                            "last_transaction_date": date_func(card.last_transaction_date)
 
                         }
                         response = {"result": "ok", "data": data}

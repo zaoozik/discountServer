@@ -1,8 +1,11 @@
 from django.db import models
 from cards.models import Card
+from core.models import DiscountPlan
+from transactions.models import Transaction
+
 
 # Create your models here.
-class Queue(models.Model):
+class Task(models.Model):
     operation_choices = (
         ('bonus', 'Бонус'),
         ('discount', 'Накопительная скидка')
@@ -12,3 +15,6 @@ class Queue(models.Model):
     queue_date = models.DateTimeField(null=True)
     operation = models.CharField(max_length=15, null=True, choices=operation_choices)
     card = models.ForeignKey(Card, on_delete=models.CASCADE)
+    data = models.FloatField(null=True)
+    d_plan = models.ForeignKey(DiscountPlan, on_delete=models.CASCADE, null=True)
+    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, null=True)

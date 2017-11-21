@@ -53,8 +53,14 @@
 function saveCard(){
     var code= $("#id_code").val();
     var holder_name = $("#id_holder_name").val();
-    var card_data = {"code": code,
-                        "holder_name": holder_name}
+    var card_data = {
+                        "code": $('#id_code').val(),
+                        "holder_name": $('#id_holder_name').val(),
+                        "accumulation":  $('#id_accumulation').val(),
+                        "bonus": $('#id_bonus').val(),
+                        "discount":  $('#id_discount').val(),
+                        "type": $('#id_type').val()
+                        }
     var cmd = "save";
 
     $.ajax({
@@ -86,6 +92,10 @@ function clearForm(){
             $('#id_accumulation').val(0);
             $('#id_bonus').val(0);
             $('#id_discount').val(0);
+            $('#id_type').val('');
+                      $('#id_reg_date').val('');
+                       $('#id_changes_date').val('');
+                        $('#id_last_transaction_date').val('');
 }
 
 function getCard(card_code)
@@ -107,10 +117,14 @@ function getCard(card_code)
             if (response.result == "ok"){
                 cData = response.data;
                 $('#id_code').val(cData.code);
-                $('#id_holder_name').val(cData.holder_name);
-                $('#id_accumulation').val(cData.accumulation);
-                $('#id_bonus').val(cData.bonus);
-                $('#id_discount').val(cData.discount);
+                 $('#id_holder_name').val(cData.holder_name);
+                  $('#id_accumulation').val(cData.accumulation);
+                   $('#id_bonus').val(cData.bonus);
+                    $('#id_discount').val(cData.discount);
+                     $('#id_type').val(cData.type);
+                      $('#id_reg_date').val(cData.reg_date);
+                       $('#id_changes_date').val(cData.changes_date);
+                        $('#id_last_transaction_date').val(cData.last_transactions_date);
 
             }
             else

@@ -4,9 +4,10 @@ from django.http import HttpRequest, HttpResponse
 from cards.models import Card
 from users.models import UserCustom
 from transactions.models import Transaction
-from core.models import DiscountPlan
+from core.models import DiscountPlan, Operations
+from queues.models import Task
 from django.contrib.auth import authenticate, login, logout
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.utils.decorators import method_decorator
 
 
@@ -59,10 +60,32 @@ def apiGetCardDiscount(request, card_code, salt):
             return HttpResponse(status='503')
 
 
+@csrf_exempt
+def apiGetCardCombo(request, card_code, salt):
+    if request.method == 'POST':
+        data = request.POST
+        if ('key' in data):
+            try:
+                cuser = UserCustom.objects.get(frontol_access_key__exact=data['key'])
+            except:
+                cuser = None
+            if cuser is not None:
+                if cuser.user.is_active:
+                    try:
+                        card = Card.objects.get(code=card_code, org=cuser.org.pk, deleted='n')
+                        return HttpResponse(('%s#%s') % (card.bonus, card.discount), status='200')
+                    except ObjectDoesNotExist as e:
+                        return HttpResponse(status='404')
+                else:
+                    return HttpResponse(status='503')
+            else:
+                return HttpResponse(status='503')
+        else:
+            return HttpResponse(status='503')
 
 @csrf_exempt
 def apiAddAccumToCard(request, card_code, salt):
-    t_type = 'assume'
+    t_type = Operations.sell
     if request.method == 'POST':
         data = request.POST
         if ('key' in data):
@@ -82,21 +105,29 @@ def apiAddAccumToCard(request, card_code, salt):
 
                             d_plan = DiscountPlan.objects.get(org_id__exact=cuser.org.pk)
                             algorithm = d_plan.algorithm
-
-                            #подключаем обработчик начислений
-                            _discounter = __import__('core.lib.%s' % algorithm, globals(), locals(),
-                                                 ['count'], 0)
-
-                            card = _discounter.count(data['value'], card, d_plan.parameters)
+                            card.accumulation += float(data['value'])
+                            card.last_transaction_date = datetime.now().date()
                             card.save()
+
                             # пишем статистику
                             trans.org = cuser.org
                             trans.card = card
                             trans.sum = float(data['value'])
                             trans.bonus_reduce = 0
-                            trans.bonus_add = card.bonus - trans.bonus_before
                             trans.type = t_type
                             trans.save()
+
+                            # Добавляем задание на начисление бонусов
+                            task = Task(queue_date=datetime.now(),
+                                        execution_date= datetime.now() + timedelta(hours=d_plan.time_delay),
+                                        data=data['value'],
+                                        card=card,
+                                        operation='bonus',
+                                        d_plan=d_plan,
+                                        transaction=trans)
+                            task.save()
+
+
 
                             return HttpResponse(data['value'])
                         else:
@@ -113,7 +144,7 @@ def apiAddAccumToCard(request, card_code, salt):
 
 @csrf_exempt
 def apiRemCardBonus(request, card_code, salt):
-    t_type= 'reduce'
+    t_type= Operations.bonus_reduce
     if request.method == 'POST':
         data = request.POST
         if ('key' in data):

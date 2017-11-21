@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.template import loader
-from core.forms import BonusForm, DiscountForm
+from core.forms import BonusForm, DiscountForm, ComboForm
 from users.models import UserCustom
 from core.models import DiscountPlan
 from transactions.models import Transaction
@@ -74,8 +74,12 @@ def settings(request):
             initials.update({'algorithm': d_plan.algorithm})
             if d_plan.algorithm=='bonus':
                 form = BonusForm(initials)
+                form.data['assume_delta'] = d_plan.time_delay
             if d_plan.algorithm == 'discount':
                 form = DiscountForm(initials)
+            if d_plan.algorithm == 'combo':
+                form = ComboForm(initials)
+                form.data['assume_delta'] = d_plan.time_delay
         except:
             form = BonusForm()
             add = '. Внимание! Сохраните настройки!'
@@ -90,6 +94,8 @@ def settings(request):
                 form = BonusForm(initial={'algorithm': 'bonus'})
             elif request.POST['algorithm'] == 'discount':
                 form = DiscountForm(initial={'algorithm': 'discount'})
+            elif request.POST['algorithm'] == 'combo':
+                form = ComboForm(initial={'algorithm': 'combo'})
 
             response = {'form': form, 'org_name': user.org.name}
             template = loader.get_template('settings.html')
@@ -113,8 +119,8 @@ def settingsSave(request):
                         'round': form.cleaned_data['round'],
                         'min_transaction': form.cleaned_data['min_transaction'],
                         'zeroing_delta': form.cleaned_data['zeroing_delta'],
-                        'assume_delta': form.cleaned_data['assume_delta'],
                     }
+                    d_plan.time_delay = form.cleaned_data['assume_delta']
                     d_plan.parameters=json.dumps(parameters)
                     d_plan.org = user.org
                     d_plan.save()
@@ -131,9 +137,6 @@ def settingsSave(request):
                     d_plan.algorithm = form.cleaned_data['algorithm']
                     parameters = {
                         'rules': form.cleaned_data['rules'],
-                        'base_discount': form.cleaned_data['base_discount'],
-                        'zeroing_delta': form.cleaned_data['zeroing_delta'],
-                        'assume_delta': form.cleaned_data['assume_delta'],
                     }
                     d_plan.parameters=json.dumps(parameters)
                     d_plan.org = user.org
@@ -141,6 +144,29 @@ def settingsSave(request):
                     response = {'form': form, 'org_name': 'СОХРАНЕНО'}
                     template = loader.get_template('settings.html')
                     return redirect('/settings/')
+            elif request.POST['algorithm'] == 'combo':
+                form = ComboForm(request.POST)
+                if form.is_valid():
+                    try:
+                        d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
+                    except:
+                        d_plan = DiscountPlan()
+                    d_plan.algorithm = form.cleaned_data['algorithm']
+                    parameters = {
+                        'rules': form.cleaned_data['rules'],
+                        'bonus_cost': form.cleaned_data['bonus_cost'],
+                        'round': form.cleaned_data['round'],
+                        'min_transaction': form.cleaned_data['min_transaction'],
+                        'zeroing_delta': form.cleaned_data['zeroing_delta'],
+                    }
+                    d_plan.time_delay = form.cleaned_data['assume_delta']
+                    d_plan.parameters=json.dumps(parameters)
+                    d_plan.org = user.org
+                    d_plan.save()
+                    response = {'form': form, 'org_name': 'СОХРАНЕНО'}
+                    template = loader.get_template('settings.html')
+                    return redirect('/settings/')
+
 
 @login_required
 def exportFrontolSettings(request):
