@@ -2,7 +2,7 @@
 /////ВТИ-СЕРВИС, 2017//////
 г. Курск, ул. Ватутина, 25
 ---------------------------
-версия 1.0.0
+версия 5.1.0.0
 ---------------------------
 Скрипт предназначен для обмена с дисконтным сервером для FRONTOL.
 
@@ -23,12 +23,11 @@ var discount = 0;
 var bonus = 0;
 var payValue = 0;
 var card_code = 0;
-var SERVER = "http://192.168.0.202/";
+var max_bonus_percentage = 100;
 
 //Настройки скрипта
-var max_bonus_percentage = 100;
-var USER_LOGIN = "k_igumenov";
-var USER_PASSWORD = "yb[ezct,t";
+var ACCESS_KEY = "695a6bb51078e5a5d64a3e6aa87bb7fad6ef5e310a218bcff6dd68590bf1c2f4";
+var SERVER = "http://192.168.0.202/";
 
 
 // Эту функцию следует указать в маркетинговой акции в качестве функции вычисления процентной скидки
@@ -38,10 +37,9 @@ function addDiscountPay()
 }
 
 
-// Эту функцию следует указать в маркетинговой акции в качестве функции вычисления рублевой скидки
+// Эту функцию следует указать в маркетинговой акции в качестве функции вычисления рублевой скидки (бонусов)
 function addBonusPay()
 {
-  //frontol.actions.showMessage("Бонусных накоплений: " +bonus);
   var bonus_current;
   var doc_sum = frontol.currentDocument.totalSum;
   var bonus_limit = doc_sum * max_bonus_percentage / 100;
@@ -58,9 +56,8 @@ function addBonusPay()
      return null;
   }
 
-  var dialogRes =  frontol.actions.showMessage("Вы можете оплатить бонусами " + bonus_current + ". Списать бонусы?", Button.YesNo);
 
- if ( dialogRes == DialogResult.Yes)
+ if ( frontol.actions.showMessage("Вы можете оплатить бонусами " + bonus_current + ". Списать бонусы?", Button.YesNo, Icon.Question) == DialogResult.Yes)
  {
       payValue = frontol.actions.inputString("Введите сумму списания бонусов. Максимально: " + bonus_current, bonus_current, 10);
       if (payValue == null)
@@ -75,7 +72,7 @@ function addBonusPay()
       return parseFloat(payValue);
 
 
- } else if  ( dialogRes == DialogResult.No)
+ } else
  {
    return null;
    }
@@ -91,11 +88,11 @@ function beforeClose()
          //Списываем бонусы
      if (payValue > 0 )
      {
-      if (remCardBonus(payValue) == payValue)
+      if (remCardBonus(payValue) == payValue)   // если списались
          {
           return parseFloat(payValue);
            }
-            else
+            else       // если не списались
             {
              frontol.actions.showError("Невозможно списать бонусы!");
              frontol.currentDocument.recalculateAllDiscounts();
@@ -107,7 +104,9 @@ function beforeClose()
 
 function afterClose()
 {
-      addCardAccum(frontol.currentDocument.totalSum);
+      if ( ! addCardAccum(frontol.currentDocument.totalSum)) {
+          frontol.actions.showError("Невозможно добавить накопления на карту!");
+      };
 }
 
 
@@ -117,8 +116,7 @@ function getDiscountPlan()
      var salt = Math.random();
      xhr.open("POST", SERVER+"api/get_plan/"+ salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-     var data = "username="+USER_LOGIN;
-     data+= "&password="+USER_PASSWORD;
+     var data = "key=" + ACCESS_KEY;
      xhr.send(data);
      var plan = '';
      while(xhr.readyState != 4){
@@ -132,6 +130,10 @@ function getDiscountPlan()
                DISCOUNT_PLAN = plan
                return true;
             }  else if (plan == 'bonus')
+            {
+               DISCOUNT_PLAN = plan
+               return true;
+             }  else if (plan == 'combo')
             {
                DISCOUNT_PLAN = plan
                return true;
@@ -186,10 +188,8 @@ function getCardBonus(Card)
       var xhr = new ActiveXObject("MSXML2.XMLHTTP");
       var salt = Math.random();
      xhr.open("POST", SERVER+"api/cards/"+DISCOUNT_PLAN+"/"+card_code+"_" + salt+"/", true);
-     //xhr.open("POST", "http://127.0.0.1:8000/api/cards/1_0001_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-     var data = "username="+USER_LOGIN;
-     data+= "&password="+USER_PASSWORD;
+     var data = "key=" + ACCESS_KEY;
      xhr.send(data);
      var Disc = 0;
      while(xhr.readyState != 4){
@@ -197,17 +197,24 @@ function getCardBonus(Card)
      }
      if(xhr.status === 200) {
         try{
-            Disc = new Number(parseFloat(xhr.responseText));
+            Disc = xhr.responseText;
             if (DISCOUNT_PLAN == 'bonus')
                 {
                 frontol.actions.showMessage("Накопления на карте: "+Disc);
-                 bonus = Disc;
+                 bonus = parseFloat(Disc);
                    }
                     else if (DISCOUNT_PLAN == 'discount')
                     {
                      frontol.actions.showMessage("Скидка: "+Disc + "%");
-                         discount = Disc;
+                         discount = parseFloat(Disc);
                       }
+                       else if (DISCOUNT_PLAN == 'combo')
+                       {
+                          var temp = Disc.split('#',2);
+                         frontol.actions.showMessage("Бонусов: "+temp[0] + "; Скидка - "+temp[1] + "%");
+                         bonus = parseFloat(temp[0]);
+                         discount = parseFloat(temp[1]);
+                          }
 
 
             return ;
@@ -235,6 +242,25 @@ function getCardBonus(Card)
 
 
 }
+//служебная функция
+function addDocDataToRequest(data)
+{
+    var doc_number = frontol.currentDocument.number;
+    var doc_external_id =frontol.currentDocument.externalID;
+    var doc_close_user = frontol.currentDocument.closeUser.name;
+    var session = frontol.sessionNumber;
+    var shop = frontol.shopNumber;
+    var workplace = frontol.codeWorkplace;
+     data+= "&doc_number="+doc_number;
+     data+= "&doc_external_id="+doc_external_id;
+     data+= "&doc_close_user=" + doc_close_user;
+     data+= "&session=" + session;
+     data+= "&shop=" + shop;
+     data+= "&workplace=" + workplace;
+     return data;
+}
+
+
 function addCardAccum(value)
 {
     var xhr = new ActiveXObject("MSXML2.XMLHTTP");
@@ -248,38 +274,39 @@ function addCardAccum(value)
     var workplace = frontol.codeWorkplace;
 
      xhr.open("POST", SERVER+"api/cards/add_accum/"+card_code+"_" + salt+"/", true);
-     //xhr.open("POST", SERVER+"api/cards/add_accum/1_0001_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-     var data = "username="+USER_LOGIN;
-     data+= "&password="+USER_PASSWORD;
+     var data = "key=" + ACCESS_KEY;
      data+= "&value="+value;
-     data+= "&doc_number="+doc_number;
-     data+= "&doc_external_id="+doc_external_id;
-     data+= "&doc_close_user=" + doc_close_user;
-     data+= "&session=" + session;
-     data+= "&shop=" + shop;
-     data+= "&workplace=" + workplace;
+     // информация о документе
+     data = addDocDataToRequest(data);
+
      xhr.send(data);
      var Disc = 0;
-     while(xhr.readyState != 4){
+     while(xhr.readyState != 4) {
         frontol.actions.wait("Идет запрос к дисконтному серверу", 1);
      }
      if(xhr.status === 200) {
         try{
             Disc = new Number(parseFloat(xhr.responseText));
+            if (Disc == value)
+            {
+             return true;
+            }    else
+            {
+             return false;
+            }
         }
         catch(e){
             frontol.actions.showError(e);
-            return 0;
+            return false;
         }
      }
      else
      {
         frontol.actions.showError("Ошибка получения данных с дисконтного сервиса");
+        return false;
      }
-     //AO.ShowMessage(xhr.responseText);
-     xhr.abort();
-     return Disc;
+     return false;
 }
 
 
@@ -289,9 +316,10 @@ function remCardBonus(val)
        var salt = Math.random();
      xhr.open("POST", SERVER+"api/cards/rem_bonus/"+card_code+"_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-     var data = "username="+USER_LOGIN;
-     data+= "&password="+USER_PASSWORD;
+     var data = "key=" + ACCESS_KEY;
      data+= "&value="+val;
+     // информация о документе
+     data = addDocDataToRequest(data);
      xhr.send(data);
      var Disc = 0;
      while(xhr.readyState != 4){
@@ -311,5 +339,4 @@ function remCardBonus(val)
      {
         frontol.actions.showError("Ошибка получения данных с дисконтного сервиса");
      }
-     return Disc;
 }
