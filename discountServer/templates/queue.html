@@ -1,0 +1,33 @@
+{% extends 'main.html' %}
+{% block 'content' %}
+<h3>Текущие задания</h3>
+
+    <div class="form-group row pull-right">
+            <small id="total"></small>
+    </div>
+
+    <table class="table table-striped" style="font-size: 11pt;">
+        <thead>
+        <tr>
+            <th>Будет выполнено</th>
+            <th>Время создания</th>
+            <th>Тип</th>
+            <th>Карта</th>
+            <th>Сумма покупки</th>
+            <th>Номер магазина</th>
+            <th>Рабочее место</th>
+            <th>Смена</th>
+            <th>Номер документа</th>
+
+
+
+        </tr>
+        </thead>
+        <tbody id="tbody">
+
+        </tbody>
+
+    </table>
+
+<script src="/static/js/queue.js"></script>
+{% endblock %}

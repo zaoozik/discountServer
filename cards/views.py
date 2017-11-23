@@ -78,7 +78,7 @@ def listCards(request):
                         {
                             "code": card.code,
                             'holder_name': card.holder_name,
-                            'accumulation': card.accumulation,
+                            'type': card.get_type(),
                             'deleted': card.deleted,
                         }
                     )

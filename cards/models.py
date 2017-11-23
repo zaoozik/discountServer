@@ -21,6 +21,32 @@ class Card (models.Model):
     changes_date = models.DateField(null=True, verbose_name='Дата последних изменений')
     last_transaction_date = models.DateField(null=True, verbose_name='Дата последней транзакции')
 
+    def is_bonus(self):
+        if self.type == 'bonus':
+            return True
+        else:
+            return False
+
+    def is_discount(self):
+        if self.type == 'discount':
+            return True
+        else:
+            return False
+
+    def is_combo(self):
+        if self.type == 'combo':
+            return True
+        else:
+            return False
+
+    def get_type(self):
+        if self.type == 'bonus':
+            return 'Бонусная'
+        if self.type == 'discount':
+            return 'Дисконтная'
+        if self.type == 'combo':
+            return 'Комбинированная'
+
     def __str__(self):
         return self.org.name + "_" + self.code
 

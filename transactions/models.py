@@ -51,4 +51,4 @@ class Transaction(models.Model):
         elif self.type == Operations.bonus_add:
             return "<span style='color: green;'>Начисление бонусов</span>"
         elif self.type == Operations.discount_recount:
-            return "<span style='color: yellow;'>Пересчет скидки</span>"
+            return "<span style='color: orange;'>Пересчет скидки</span>"

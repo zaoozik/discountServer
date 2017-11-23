@@ -21,7 +21,7 @@ INSERT INTO ACTSCRIPT("ID","CODE","NAME","DATA") VALUES (2158679,1,'vti_discount
 
 function init()
 {
- frontol.addEventListener("addCard", "getCardBonus", true);
+ frontol.addEventListener("addCard", "getCard", true);
  frontol.addEventListener("closeDocument", "beforeClose", true);
  frontol.addEventListener("closeDocument", "afterClose", false);
 
@@ -65,9 +65,8 @@ function addBonusPay()
      return null;
   }
 
-  var dialogRes =  frontol.actions.showMessage("Вы можете оплатить бонусами " + bonus_current + ". Списать бонусы?", Button.YesNo);
 
- if ( dialogRes == DialogResult.Yes)
+ if ( frontol.actions.showMessage("Вы можете оплатить бонусами " + bonus_current + ". Списать бонусы?", Button.YesNo, Icon.Question) == DialogResult.Yes)
  {
       payValue = frontol.actions.inputString("Введите сумму списания бонусов. Максимально: " + bonus_current, bonus_current, 10);
       if (payValue == null)
@@ -82,7 +81,7 @@ function addBonusPay()
       return parseFloat(payValue);
 
 
- } else if  ( dialogRes == DialogResult.No)
+ } else
  {
    return null;
    }
@@ -94,33 +93,35 @@ function addBonusPay()
 
 function beforeClose()
 {
-  frontol.currentDocument.recalculateAllDiscounts();
          //Списываем бонусы
      if (payValue > 0 )
      {
-      if (remCardBonus(payValue) == payValue)   // если списались
+      if (remCardBonus(payValue) != payValue)   // если списались
          {
-          return parseFloat(payValue);
-           }
-            else       // если не списались
-            {
+
+                 // если не списались
              frontol.actions.showError("Невозможно списать бонусы!");
              frontol.currentDocument.recalculateAllDiscounts();
-              return null;
+
                }
        }
+       frontol.currentDocument.userValues.set("bonus", bonus + payValue);
+       frontol.currentDocument.userValues.set("bonus_reduce", payValue);
+       frontol.currentDocument.userValues.set("discount", discount);
+       frontol.currentDocument.userValues.set("accum", 1234);
 }
 
 
 function afterClose()
-{
+{    if (frontol.currentDocument.cardValues != ""){
       if ( ! addCardAccum(frontol.currentDocument.totalSum)) {
           frontol.actions.showError("Невозможно добавить накопления на карту!");
       };
+      }
 }
 
 
-function getDiscountPlan()
+function getDiscountPlan23423()
 {
      var xhr = new ActiveXObject("MSXML2.XMLHTTP");
      var salt = Math.random();
@@ -140,6 +141,10 @@ function getDiscountPlan()
                DISCOUNT_PLAN = plan
                return true;
             }  else if (plan == ''bonus'')
+            {
+               DISCOUNT_PLAN = plan
+               return true;
+             }  else if (plan == ''combo'')
             {
                DISCOUNT_PLAN = plan
                return true;
@@ -174,7 +179,7 @@ function getDiscountPlan()
 
 
 
-function getCardBonus(Card)
+function getCard(Card)
 {
       card_code = Card.value;
 
@@ -183,17 +188,17 @@ function getCardBonus(Card)
           frontol.actions.showError("Карта клиента уже введена! Воспользуйтесь кнопкой отмены введенных карт.");
           return null;
       }
-      if (! getDiscountPlan())
-      {
-             return null;
-      }
+     // if (! getDiscountPlan())
+     // {
+    //         return null;
+    //  }
 
       payValue=0;
       bonus=0;
       discount=0;
       var xhr = new ActiveXObject("MSXML2.XMLHTTP");
       var salt = Math.random();
-     xhr.open("POST", SERVER+"api/cards/"+DISCOUNT_PLAN+"/"+card_code+"_" + salt+"/", true);
+     xhr.open("POST", SERVER+"api/cards/"+card_code+"_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "key=" + ACCESS_KEY;
      xhr.send(data);
@@ -203,17 +208,26 @@ function getCardBonus(Card)
      }
      if(xhr.status === 200) {
         try{
-            Disc = new Number(parseFloat(xhr.responseText));
-            if (DISCOUNT_PLAN == ''bonus'')
-                {
-                frontol.actions.showMessage("Накопления на карте: "+Disc);
-                 bonus = Disc;
-                   }
-                    else if (DISCOUNT_PLAN == ''discount'')
-                    {
-                     frontol.actions.showMessage("Скидка: "+Disc + "%");
-                         discount = Disc;
-                      }
+            Disc = xhr.responseText;
+            var temp = Disc.split(''#'',2);
+            var msg = '''';
+
+            bonus = parseFloat(temp[0]);
+            discount = parseFloat(temp[1])
+
+            if (bonus > 0)
+            {
+               msg= "Бонусов: "+bonus + ";";
+            }
+            if (discount >0)
+            {
+               msg +=  "Скидка: "+temp[1] + "%";
+            }
+
+            if (msg != '''')
+            {
+             frontol.actions.showMessage(msg, Icon.Asterisk);
+            }
 
 
             return ;
@@ -427,4 +441,4 @@ COMMIT;
 
 */
 
-EXECUTE PROCEDURE SET_GID(2158746);
+EXECUTE PROCEDURE SET_GID(2158751);

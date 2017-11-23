@@ -124,7 +124,7 @@ function getCard(card_code)
                      $('#id_type').val(cData.type);
                       $('#id_reg_date').val(cData.reg_date);
                        $('#id_changes_date').val(cData.changes_date);
-                        $('#id_last_transaction_date').val(cData.last_transactions_date);
+                        $('#id_last_transaction_date').val(cData.last_transaction_date);
 
             }
             else
@@ -228,7 +228,7 @@ function dataUpdate(){
                      var html = tr+
                          '<td><input class="cardcode" type="checkbox" id="' + value["code"] + '"></td> \
                          <td>' + value["code"] + '</td> \
-                         <td>' + value["accumulation"] + '</td> \
+                         <td>' + value["type"] + '</td> \
                          <td>' + value["holder_name"] + '</td> \
                          <td><button data-toggle="modal" data-target="#CardModal" type="button" onclick="getCard(';
                          html += "'" + value["code"] + "'";
@@ -298,7 +298,7 @@ function dataAdd(){
                     var html = tr+
                          '<td><input class="cardcode" type="checkbox" id="' + value["code"] + '"></td> \
                          <td>' + value["code"] + '</td> \
-                         <td>' + value["accumulation"] + '</td> \
+                         <td>' + value["type"] + '</td> \
                          <td>' + value["holder_name"] + '</td> \
                          <td><button data-toggle="modal" data-target="#CardModal" type="button" onclick="getCard(';
                          html += "'" + value["code"] + "'";

@@ -21,6 +21,25 @@ class DiscountPlan (models.Model):
     parameters = models.CharField(default='', max_length=400, verbose_name='Параметры')
     org = models.OneToOneField(org_models.Org, on_delete=models.CASCADE, verbose_name='Организация')
     time_delay = models.IntegerField(default=0)
+
+    def is_bonus(self):
+        if self.algorithm == 'bonus':
+            return True
+        else:
+            return False
+
+    def is_discount(self):
+        if self.algorithm == 'discount':
+            return True
+        else:
+            return False
+
+    def is_combo(self):
+        if self.algorithm == 'combo':
+            return True
+        else:
+            return False
+
     def __str__(self):
         return self.org.name + '_' + self.algorithm
 

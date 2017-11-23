@@ -11,9 +11,34 @@ from datetime import datetime, timedelta
 from django.utils.decorators import method_decorator
 
 
+def identify_task_operation(card, d_plan):
+    if d_plan.is_bonus():
+        if card.is_bonus():
+            return 'bonus'
+        elif card.is_combo():
+            return 'bonus'
+        elif card.is_discount():
+            return None
+    elif d_plan.is_discount():
+        if card.is_bonus():
+            return None
+        elif card.is_combo():
+            return 'discount'
+        elif card.is_discount():
+            return 'discount'
+    elif d_plan.is_combo():
+        if card.is_bonus():
+            return 'bonus'
+        elif card.is_combo():
+            return 'combo'
+        elif card.is_discount():
+            return 'discount'
+
+
+
 # Create your views here.
 @csrf_exempt
-def apiGetCardBonus(request, card_code, salt):
+def apiGetCard(request, card_code, salt):
     if request.method == 'POST':
         data = request.POST
         if ('key' in data):
@@ -25,55 +50,30 @@ def apiGetCardBonus(request, card_code, salt):
                 if cuser.user.is_active:
                     try:
                         card = Card.objects.get(code=card_code, org=cuser.org.pk, deleted='n')
-                        return HttpResponse(card.bonus, status='200')
-                    except ObjectDoesNotExist as e:
-                        return HttpResponse(status='404')
-                else:
-                    return HttpResponse(status='503')
-            else:
-                return HttpResponse(status='503')
-        else:
-            return HttpResponse(status='503')
+                        d_plan = DiscountPlan.objects.get(org=cuser.org.pk)
+                        # Логика взаимодействия режима дисконтной системы и типов карт
+                        # В комбинированном режиме работают дисконтные, бонусные и комбинированные карты.
+                        # В режиме"Бонусы" работают бонусные и комбинированные карты.
+                        # В режиме "Накопительная скидка" работают дисконтные карты и комбинированные
+                        #
 
-
-@csrf_exempt
-def apiGetCardDiscount(request, card_code, salt):
-    if request.method == 'POST':
-        data = request.POST
-        if ('key' in data):
-            try:
-                cuser = UserCustom.objects.get(frontol_access_key__exact=data['key'])
-            except:
-                cuser = None
-            if cuser is not None:
-                if cuser.user.is_active:
-                    try:
-                        card = Card.objects.get(code=card_code, org=cuser.org.pk, deleted='n')
-                        return HttpResponse(card.discount, status='200')
-                    except ObjectDoesNotExist as e:
-                        return HttpResponse(status='404')
-                else:
-                    return HttpResponse(status='503')
-            else:
-                return HttpResponse(status='503')
-        else:
-            return HttpResponse(status='503')
-
-
-@csrf_exempt
-def apiGetCardCombo(request, card_code, salt):
-    if request.method == 'POST':
-        data = request.POST
-        if ('key' in data):
-            try:
-                cuser = UserCustom.objects.get(frontol_access_key__exact=data['key'])
-            except:
-                cuser = None
-            if cuser is not None:
-                if cuser.user.is_active:
-                    try:
-                        card = Card.objects.get(code=card_code, org=cuser.org.pk, deleted='n')
-                        return HttpResponse(('%s#%s') % (card.bonus, card.discount), status='200')
+                        if card.is_bonus():
+                            if not d_plan.is_discount():
+                                return HttpResponse(('%s#%s') % (card.bonus, 0), status='200')
+                            else:
+                                return HttpResponse(('%s#%s') % (0, 0), status='200')
+                        if card.is_discount():
+                            if not d_plan.is_bonus():
+                                return HttpResponse(('%s#%s') % (0, card.discount), status='200')
+                            else:
+                                return HttpResponse(('%s#%s') % (0, 0), status='200')
+                        if card.is_combo():
+                            if d_plan.is_combo():
+                                return HttpResponse(('%s#%s') % (card.bonus, card.discount), status='200')
+                            elif d_plan.is_bonus():
+                                return HttpResponse(('%s#%s') % (card.bonus, 0), status='200')
+                            elif d_plan.is_discount():
+                                return HttpResponse(('%s#%s') % (0, card.discount), status='200')
                     except ObjectDoesNotExist as e:
                         return HttpResponse(status='404')
                 else:
@@ -117,16 +117,18 @@ def apiAddAccumToCard(request, card_code, salt):
                             trans.type = t_type
                             trans.save()
 
-                            # Добавляем задание на начисление бонусов
-                            task = Task(queue_date=datetime.now(),
-                                        execution_date= datetime.now() + timedelta(hours=d_plan.time_delay),
-                                        data=data['value'],
-                                        card=card,
-                                        operation='bonus',
-                                        d_plan=d_plan,
-                                        transaction=trans)
-                            task.save()
-
+                            try: # Добавляем задание
+                                task = Task(queue_date=datetime.now(),
+                                            execution_date= datetime.now() + timedelta(hours=d_plan.time_delay),
+                                            data=data['value'],
+                                            card=card,
+                                            operation=identify_task_operation(card, d_plan),
+                                            d_plan=d_plan,
+                                            transaction=trans,
+                                            org=card.org)
+                                task.save()
+                            except:
+                                pass
 
 
                             return HttpResponse(data['value'])

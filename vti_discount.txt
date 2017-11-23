@@ -12,7 +12,7 @@
 
 function init()
 {
- frontol.addEventListener("addCard", "getCardBonus", true);
+ frontol.addEventListener("addCard", "getCard", true);
  frontol.addEventListener("closeDocument", "beforeClose", true);
  frontol.addEventListener("closeDocument", "afterClose", false);
 
@@ -110,7 +110,7 @@ function afterClose()
 }
 
 
-function getDiscountPlan()
+function getDiscountPlan23423()
 {
      var xhr = new ActiveXObject("MSXML2.XMLHTTP");
      var salt = Math.random();
@@ -168,7 +168,7 @@ function getDiscountPlan()
 
 
 
-function getCardBonus(Card)
+function getCard(Card)
 {
       card_code = Card.value;
 
@@ -177,17 +177,17 @@ function getCardBonus(Card)
           frontol.actions.showError("Карта клиента уже введена! Воспользуйтесь кнопкой отмены введенных карт.");
           return null;
       }
-      if (! getDiscountPlan())
-      {
-             return null;
-      }
+     // if (! getDiscountPlan())
+     // {
+    //         return null;
+    //  }
 
       payValue=0;
       bonus=0;
       discount=0;
       var xhr = new ActiveXObject("MSXML2.XMLHTTP");
       var salt = Math.random();
-     xhr.open("POST", SERVER+"api/cards/"+DISCOUNT_PLAN+"/"+card_code+"_" + salt+"/", true);
+     xhr.open("POST", SERVER+"api/cards/"+card_code+"_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "key=" + ACCESS_KEY;
      xhr.send(data);
@@ -198,23 +198,25 @@ function getCardBonus(Card)
      if(xhr.status === 200) {
         try{
             Disc = xhr.responseText;
-            if (DISCOUNT_PLAN == 'bonus')
-                {
-                frontol.actions.showMessage("Накопления на карте: "+Disc);
-                 bonus = parseFloat(Disc);
-                   }
-                    else if (DISCOUNT_PLAN == 'discount')
-                    {
-                     frontol.actions.showMessage("Скидка: "+Disc + "%");
-                         discount = parseFloat(Disc);
-                      }
-                       else if (DISCOUNT_PLAN == 'combo')
-                       {
-                          var temp = Disc.split('#',2);
-                         frontol.actions.showMessage("Бонусов: "+temp[0] + "; Скидка - "+temp[1] + "%");
-                         bonus = parseFloat(temp[0]);
-                         discount = parseFloat(temp[1]);
-                          }
+            var temp = Disc.split('#',2);
+            var msg = '';
+
+            bonus = parseFloat(temp[0]);
+            discount = parseFloat(temp[1])
+
+            if (bonus > 0)
+            {
+               msg= "Бонусов: "+bonus + ";";
+            }
+            if (discount >0)
+            {
+               msg +=  "Скидка: "+temp[1] + "%";
+            }
+
+            if (msg != '')
+            {
+             frontol.actions.showMessage(msg, Icon.Asterisk);
+            }
 
 
             return ;

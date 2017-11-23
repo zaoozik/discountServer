@@ -46,9 +46,9 @@ class DiscountParameters:
         return self.body[self.current]
 
 
-def count(value, card, json_str_parameters):
+def count(value, card,  d_plan, transaction):
     try:
-        parameters = json.loads(json_str_parameters)
+        parameters = json.loads(d_plan.parameters)
     except:
         return None
     if type(parameters) is not dict:
@@ -58,21 +58,6 @@ def count(value, card, json_str_parameters):
 
     if 'rules' in parameters:
         rules = eval(parameters['rules'])
-    else:
-        return None
-
-    if 'base_discount' in parameters:
-        base_discount = float(parameters['base_discount'])
-    else:
-        return None
-
-    if 'zeroing_delta' in parameters:
-        zeroing_delta = float(parameters['zeroing_delta'])
-    else:
-        return None
-
-    if 'assume_delta' in parameters:
-        assume_delta = float(parameters['zeroing_delta'])
     else:
         return None
 
@@ -92,6 +77,11 @@ def count(value, card, json_str_parameters):
                     date=datetime.now(),
                     type=Operations.discount_recount,
                     bonus_add=card.discount,
+                    doc_number=transaction.doc_number,
+                    session=transaction.session,
+                    sum=transaction.sum,
+                    shop=transaction.shop,
+                    workplace=transaction.workplace
                 )
                 trans.save()
 
@@ -99,8 +89,6 @@ def count(value, card, json_str_parameters):
                 return card
         else:
             rules.next()
-
-
 
     return card
 

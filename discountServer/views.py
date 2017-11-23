@@ -138,6 +138,7 @@ def settingsSave(request):
                     parameters = {
                         'rules': form.cleaned_data['rules'],
                     }
+                    d_plan.time_delay = 0
                     d_plan.parameters=json.dumps(parameters)
                     d_plan.org = user.org
                     d_plan.save()
