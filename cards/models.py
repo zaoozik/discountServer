@@ -21,6 +21,11 @@ class Card (models.Model):
     changes_date = models.DateField(null=True, verbose_name='Дата последних изменений')
     last_transaction_date = models.DateField(null=True, verbose_name='Дата последней транзакции')
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['code'], name = 'code_index'),
+        ]
+
     def is_bonus(self):
         if self.type == 'bonus':
             return True

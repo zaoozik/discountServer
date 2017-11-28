@@ -29,6 +29,12 @@ class DiscountParameters:
     def get_current(self):
         return self.body[self.current]
 
+    def get_previous(self):
+        current = self.current - 1
+        if current < self.first:
+            return None
+        return self.body[current]
+
     def next(self):
         current = self.current+1
         if current > self.last:
@@ -63,32 +69,62 @@ def count(value, card,  d_plan, transaction):
 
     rules = DiscountParameters().load(rules)
     next_discount = None
-    while rules.current<=rules.last:
-        if rules.get_current()[0] == card.discount:
-            next_discount = rules.next()
-            if next_discount is None:
-                return card
-            if next_discount[1] <= card.accumulation:
-                card.discount = next_discount[0]
+    if value >= 0:
+        while rules.current<=rules.last:
+            if rules.get_current()[0] == card.discount:
+                next_discount = rules.next()
+                if next_discount is None:
+                    return card
+                if next_discount[1] <= card.accumulation:
+                    card.discount = next_discount[0]
 
-                trans = Transaction(
-                    org=card.org,
-                    card=card,
-                    date=datetime.now(),
-                    type=Operations.discount_recount,
-                    bonus_add=card.discount,
-                    doc_number=transaction.doc_number,
-                    session=transaction.session,
-                    sum=transaction.sum,
-                    shop=transaction.shop,
-                    workplace=transaction.workplace
-                )
-                trans.save()
+                    trans = Transaction(
+                        org=card.org,
+                        card=card,
+                        date=datetime.now(),
+                        type=Operations.discount_recount,
+                        bonus_add=card.discount,
+                        doc_number=transaction.doc_number,
+                        session=transaction.session,
+                        sum=transaction.sum,
+                        shop=transaction.shop,
+                        workplace=transaction.workplace
+                    )
+                    trans.save()
 
+                else:
+                    return card
             else:
-                return card
-        else:
-            rules.next()
+                rules.next()
+
+    if value < 0:
+        rules.current = rules.last
+        while rules.current >= rules.first:
+            if rules.get_current()[0] == card.discount:
+                next_discount = rules.get_previous()
+                if next_discount is None:
+                    return card
+                if rules.get_current()[1] > card.accumulation:
+                    card.discount = next_discount[0]
+
+                    trans = Transaction(
+                        org=card.org,
+                        card=card,
+                        date=datetime.now(),
+                        type=Operations.discount_recount,
+                        bonus_add=card.discount,
+                        doc_number=transaction.doc_number,
+                        session=transaction.session,
+                        sum=transaction.sum,
+                        shop=transaction.shop,
+                        workplace=transaction.workplace
+                    )
+                    trans.save()
+
+                else:
+                    return card
+            else:
+                rules.previous()
 
     return card
 

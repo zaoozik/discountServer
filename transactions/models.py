@@ -10,7 +10,8 @@ class Transaction(models.Model):
         ('Списание бонусов', 'bonus_reduce'),
         ('Начисление бонусов', 'bonus_add'),
         ('Продажа', 'sell'),
-        ('Пересчет скидки', 'discount_recount')
+        ('Пересчет скидки', 'discount_recount'),
+        ('Возврат', 'refund'),
 
     }
     type=models.CharField(verbose_name='Тип',max_length=17, null=True, choices=type_choices)
@@ -48,6 +49,8 @@ class Transaction(models.Model):
             return "<span style='color: blue;'>Продажа</span>"
         elif self.type == Operations.bonus_reduce:
             return "<span style='color: red;'>Списание бонусов</span>"
+        elif self.type == Operations.refund:
+            return "<span style='color: red;'>Возврат</span>"
         elif self.type == Operations.bonus_add:
             return "<span style='color: green;'>Начисление бонусов</span>"
         elif self.type == Operations.discount_recount:

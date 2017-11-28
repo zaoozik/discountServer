@@ -7,6 +7,8 @@ urlpatterns = [
         views.apiAddAccumToCard, name='apiAddAccumToCard'),
     url(r'^cards/rem_bonus/(?P<card_code>[0-9]+)_(?P<salt>0.[0-9]+)/$',
         views.apiRemCardBonus, name='apiRemCardBonus'),
+    url(r'^cards/vti_keeper/$',
+        views.apiToCardFromService, name='apiToCardFromService'),
     url(r'^get_plan/(?P<salt>0.[0-9]+)/$', views.apiGetDiscountPlan, name='apiGetDiscountPlan'),
 
 

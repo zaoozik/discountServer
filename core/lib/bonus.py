@@ -29,7 +29,6 @@ def count (value, card, d_plan, transaction):
         return None
     if type(parameters) is not dict:
         return None
-
     value = float(value)
 
     if 'bonus_cost' in parameters:
@@ -52,7 +51,7 @@ def count (value, card, d_plan, transaction):
     else:
         return None
 
-    if value < min_transaction:
+    if abs(value) < min_transaction:
         return card
 
     trans = Transaction(

@@ -1,7 +1,7 @@
     var buffer= '';
     var start = 0;
     var count = 10;
-    var total =3;
+    var total =0;
     var elems_end = false;
     var selection_parameters ={
         "sort": "code",
@@ -174,8 +174,50 @@ function deleteCard(){
       });
 
 }
+
+function restoreCard(){
+
+    var select = $('.cardcode:checked');
+    if (select.length == 0)
+    {return;}
+
+    var card_codes = [];
+
+    $.each(select, function(i, item){
+     card_codes[card_codes.length] = item.attributes["id"].value;
+    }
+    );
+
+
+    var cmd = "restore";
+
+    $.ajax({
+        url: '/cards/maintenance/',
+        type: "POST",
+        data: {
+          "cmd": cmd,
+          "data": JSON.stringify(card_codes)
+        },
+        dataType: "json",
+        success: function (data) {
+          if (data.result) {
+            if (data.result == "ok"){
+                window.location.href = '../cards/';
+            }
+            else
+            {
+               alert("Ошибка!");
+            }
+         }
+        }
+      });
+
+}
 $(document).ready(function(){
         dataUpdate();
+        $('#tbody').height($(document).height() - $('#topmenu').height() - $('#tools').height() - 160)
+
+
 
         //$('#data').css('margin-top', '200px');
 });
@@ -249,6 +291,7 @@ function dataUpdate(){
                alert("Ошибка!");
             }
          }
+                 dataAdd();
         }
       });
 }
@@ -335,10 +378,26 @@ function clearFilter(){
     dataUpdate();
 }
 
-$(window).scroll(function()
+$('#tbody').scroll(function()
 {
-     if  ($(window).scrollTop() +$(window).height() >= $(document).height())
+    var height = 0;
+    $.each($('#tbody').children(), function(index, value){
+
+    height += value.clientHeight;
+
+    });
+    //alert(height + ";" + ($('#scrollData').height() -40));
+    if (height < ($('#scrollData').height() -40))
+    {
+        dataAdd();
+        //alert(height + ";" + ($('#scrollData').height() -40));
+        return;
+    }
+
+     if  ($('#tbody').scrollTop() + $('#scrollData').height() -40 == height )
      {
           dataAdd();
+          //alert(height + ";" + ($('#scrollData').height() -40));
+          return;
      }
 });

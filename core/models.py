@@ -9,6 +9,7 @@ class Operations:
     bonus_add = 'bonus_add'
     sell = 'sell'
     discount_recount = 'discount_recount'
+    refund = 'refund'
 
 
 class DiscountPlan (models.Model):

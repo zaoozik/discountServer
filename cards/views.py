@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.db.models import Q
 from cards.models import Card
 from orgs.models import Org
@@ -11,7 +11,7 @@ from rest_framework.parsers import JSONParser
 from django.contrib.auth.decorators import login_required
 from django.template import loader
 from users.models import UserCustom
-from .forms import CardForm
+from .forms import CardForm, MassCardForm
 import json
 from datetime import datetime
 
@@ -32,22 +32,9 @@ def listCards(request):
         response = {}
         form = CardForm()
         template = loader.get_template('list_cards.html')
-        user =UserCustom.objects.get(user_id__exact=request.user.pk)
-        if user.org is None:
-            return HttpResponse(template.render(response, request))
-        if "deleted" in request.GET:
-            cards = Card.objects.filter(org__exact=user.org)
-        else:
-            cards = Card.objects.filter(org__exact=user.org, deleted__exact='n')
-        if "search" in request.GET:
-            phrase = request.GET["search"]
-            if is_digit(phrase):
-                cards = cards.filter(code__exact=phrase)
-            else:
-                cards = cards.filter(holder_name__contains=phrase)
-        if cards is not None:
-            response = {"cards": cards, "form": form}
-            return HttpResponse(template.render(response, request))
+        response = {"add_form": form, "mass_add_form": MassCardForm()}
+        return HttpResponse(template.render(response, request))
+
     if request.method == "POST":
         user = UserCustom.objects.get(user_id__exact=request.user.pk)
         q = Q(org_id__exact=user.org.pk)
@@ -67,11 +54,10 @@ def listCards(request):
                         q &= Q(code__startswith=selection_parameters["search"])
                     elif selection_parameters["search"] != '':
                         q &= Q(holder_name__contains=selection_parameters["search"])
-                cards = Card.objects.filter(q)
-                total = len(cards)
+                total = Card.objects.filter(q).count()
                 if data["count"] > total:
-                    data["count"] = total;
-                cards = cards.order_by(selection_parameters["sort"]).all()[data["start"]:data["start"]+data["count"]]
+                    data["count"] = total
+                cards = Card.objects.filter(q).order_by(selection_parameters["sort"]).all()[data["start"]:data["start"]+data["count"]]
                 resp_cards=[]
                 for card in cards:
                     resp_cards.append(
@@ -165,5 +151,87 @@ def maintenance(request):
                     except Exception as err:
                         response = {"result": "error", "msg": err}
                         return HttpResponse(json.dumps(response), content_type="application/json")
+            if post["cmd"] == "restore":  # получение данных по карте
+                if "data" in post:
+                    data = json.loads(post["data"])
+                    try:
+                        for code in data:
+                            card = Card.objects.filter(code__exact=code,
+                                                       org_id__exact=user.org.pk
+                                                       ).get()
+                            card.deleted = 'n'
+                            card.save()
+                        response = {"result": "ok", "data": data}
+                        response = json.dumps(response)
+                        return HttpResponse(response, content_type="application/json")
+                    except Exception as err:
+                        response = {"result": "error", "msg": err}
+                        return HttpResponse(json.dumps(response), content_type="application/json")
+
+
+
+@login_required(login_url='./login/')
+def mass_add(request):
+    if request.method == "POST":
+        data = request.POST
+        user = UserCustom.objects.get(user_id__exact=request.user.pk)
+        try:
+            form = MassCardForm(data)
+            if form.is_valid():
+                start = form.cleaned_data['code_start']
+                end = form.cleaned_data['code_end']
+                length = form.cleaned_data['code_length']
+                pool = [str(x).zfill(length) for x in range(start, end+1, 1)]
+                for code in pool:
+                    try:
+                        card = Card.objects.get(code__exact=code, org_id__exact=user.org.pk)
+                        exist = True
+                    except:
+                        card = Card()
+                        exist = False
+
+                    card.org = user.org
+
+                    if not exist:
+                        card.code = code
+                        card.org = user.org
+                        card.type = form.cleaned_data['type']
+                        card.discount = form.cleaned_data['discount']
+                        card.bonus = form.cleaned_data['bonus']
+                        card.accumulation = form.cleaned_data['accumulation']
+                        card.reg_date = datetime.now().date()
+                        card.last_transaction_date = datetime.now().date()
+
+                    else:
+                        if form.cleaned_data['doubles'] == 'rewrite':
+                            card.type = form.cleaned_data['type']
+                            card.discount = form.cleaned_data['discount']
+                            card.bonus = form.cleaned_data['bonus']
+                            card.accumulation = form.cleaned_data['accumulation']
+                            card.fio = ''
+                            card.deleted = 'n'
+                            card.reg_date = datetime.now().date()
+                            card.last_transaction_date = datetime.now().date()
+                            card.changes_date = None
+                        elif form.cleaned_data['doubles'] == 'append':
+                            card.type = form.cleaned_data['type']
+                            card.discount = form.cleaned_data['discount']
+                            card.bonus = form.cleaned_data['bonus']
+                            card.accumulation = form.cleaned_data['accumulation']
+                            card.deleted = 'n'
+                            card.reg_date = datetime.now().date()
+                            card.last_transaction_date = datetime.now().date()
+                            card.changes_date = None
+                        elif form.cleaned_data['doubles'] == 'ignore':
+                            continue
+                    card.save()
+
+                return HttpResponseRedirect('/cards/')
+        except Exception as e:
+            response = {"result": e}
+            return HttpResponse(response, content_type="application/json")
+
+        response = {"result": "error"}
+        return HttpResponse(json.dumps(response), content_type="application/json")
 
 

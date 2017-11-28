@@ -10,12 +10,12 @@
 
 
 <!--<div id = 'toolbox' style="position: fixed; z-index: 999999999; background-color: white; width: inherit;">-->
-<div style="">
+<div id = "tools">
 <div class="form-group row">
         <div class="col-5 ">
             <button class="btn btn-success btn-sm" id="addCardButton" data-toggle="modal" data-target="#CardModal"><i class="fa fa-credit-card" aria-hidden="true"></i> Добавить</button>
             <button class="btn btn-danger btn-sm"  onclick="deleteCard();"><i class="fa fa-trash-o" aria-hidden="true"></i> Удалить</button>
-             <button class="btn btn-warning btn-sm"  onclick=""><i class="fa fa-recycle" aria-hidden="true"></i> Восстановить</button>
+             <button class="btn btn-warning btn-sm"  onclick="restoreCard();"><i class="fa fa-recycle" aria-hidden="true"></i> Восстановить</button>
         </div>
         <div class="col-5">
             <input type="text" id="search" class="form-control form-control-sm" placeholder="Код карты или ФИО владельца">
@@ -28,7 +28,7 @@
     </div>
     <div class="form-group row">
         <div class="col-5 ">
-
+        <button class="btn btn-success btn-sm"  id="massAddCardButton" data-toggle="modal" data-target="#MassCardModal"><i class="fa fa-users" aria-hidden="true"></i> Массовое добавление</button>
         </div>
         <div class="col-5">
                 <small>Сортировать по</small>
@@ -54,8 +54,55 @@
     </div>
 </div>
 
+<style>
+    table {
+        width: 110%;
+    }
+
+thead, tbody, tr, td, th { display: block; }
+
+tr:after {
+    content: ' ';
+    display: block;
+    visibility: hidden;
+    clear: both;
+}
+
+thead th {
+    height: 40px;
+
+    /*text-align: left;*/
+}
+
+tbody {
+    height: 300px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+thead {
+    /* fallback */
+}
+
+
+tbody td, thead th {
+    width: 26.6%;
+    float: left;
+}
+
+tbody td:last-child, thead th:last-child {
+    width: 10%;
+    float: left;
+}
+
+tbody td:first-child, thead th:first-child {
+    width: 10%;
+    float: left;
+}
+</style>
+
 <div  id="data">
-    <table id="scrollData" class="table">
+    <table id="scrollData">
         <thead>
         <tr >
             <th></th>
@@ -85,13 +132,38 @@
       <div class="modal-body">
           <form id="CardForm" method="POST">
               {% csrf_token %}
-                {{ form }}
+                {{ add_form }}
           </form>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-primary" onclick="saveCard();">Сохранить</button>
         <button type="button" class="btn btn-secondary" onclick="clearForm();" data-dismiss="modal">Отмена</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="MassCardModal">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Массовое добавление карт</h5>
+        <button type="button" class="close"  onclick="" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+          <form id="MassCardForm" method="POST" action="maintenance/mass_add/">
+              {% csrf_token %}
+                {{ mass_add_form }}
+              </form>
+
+      </div>
+      <div class="modal-footer">
+        <button type="submit"  form="MassCardForm" class="btn btn-primary">Добавить</button>
+        <button type="button" class="btn btn-secondary" onclick="" data-dismiss="modal">Отмена</button>
+      </div>
+
     </div>
   </div>
 </div>
