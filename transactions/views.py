@@ -54,11 +54,10 @@ def listTrans(request):
                         q &= Q(workplace__exact=selection_parameters["workplace"])
                     if selection_parameters["doc_number"]:
                         q &= Q(doc_number__exact=selection_parameters["doc_number"])
-                trans = Transaction.objects.filter(q)
-                total = len(trans)
+                total = Transaction.objects.filter(q).count()
                 if data["count"] > total:
                     data["count"] = total
-                trans = trans.order_by('-'+selection_parameters["sort"]).all()[data["start"]:data["start"]+data["count"]]
+                trans = Transaction.objects.filter(q).order_by('-'+selection_parameters["sort"]).all()[data["start"]:data["start"]+data["count"]]
                 resp_cards=[]
                 for tran in trans:
                     resp_cards.append(

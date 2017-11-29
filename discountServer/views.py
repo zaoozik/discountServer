@@ -116,6 +116,7 @@ def settingsSave(request):
                     d_plan.algorithm = form.cleaned_data['algorithm']
                     parameters = {
                         'bonus_cost': form.cleaned_data['bonus_cost'],
+                        'max_bonus_percentage': form.cleaned_data['max_bonus_percentage'],
                         'round': form.cleaned_data['round'],
                         'min_transaction': form.cleaned_data['min_transaction'],
                         'zeroing_delta': form.cleaned_data['zeroing_delta'],
@@ -156,6 +157,7 @@ def settingsSave(request):
                     parameters = {
                         'rules': form.cleaned_data['rules'],
                         'bonus_cost': form.cleaned_data['bonus_cost'],
+                        'max_bonus_percentage': form.cleaned_data['max_bonus_percentage'],
                         'round': form.cleaned_data['round'],
                         'min_transaction': form.cleaned_data['min_transaction'],
                         'zeroing_delta': form.cleaned_data['zeroing_delta'],

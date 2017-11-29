@@ -1,37 +1,156 @@
 {% extends 'main.html' %}
 {% block 'content' %}
 <h3>Настройки</h3>
-<div class="jumbotron">
-    <h5> Организация - {{org_name}}</h5>
-    <p>Активность до: {{active}}</p>
-    <hr />
-    <p>Ключ доступа FRONTOL - {{key}}</p>
-    <p><a href="/settings/frontol/"><i class="fa fa-download" aria-hidden="true"></i> Файл настроек FRONTOL</a></p>
-    <hr />
-    <form  id="bonus-form" class="form-group" method="POST" action="../settings/save/" >
-            {% csrf_token %}
-                {{ form }}
+<style>
+    .jumbotron {
+    background-color: white !important;
+    }
+</style>
 
-     <p class="text-center">
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+  <li class="nav-item">
+    <a class="nav-link active" id="discount-tab" data-toggle="tab" href="#discount" role="tab" aria-controls="discount" aria-selected="true">Дисконтная система</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" id="workplace-tab" data-toggle="tab" href="#workplace" role="tab" aria-controls="workplace" aria-selected="false">Кассы</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" id="org-tab" data-toggle="tab" href="#org" role="tab" aria-controls="org" aria-selected="false">Организация</a>
+  </li>
+</ul>
+<div class="tab-content" id="settingsContent">
+  <div class="tab-pane fade show active" id="discount" role="tabpanel" aria-labelledby="discount-tab">
+      <div class="jumbotron">
+            <form  id="bonus-form" class="form-group">
+                    {% csrf_token %}
+                        {{ form }}
 
-         </br>
-        <button type="submit" class="btn btn-lg">Сохранить</button>
-     </p>
-    </form>
+                <div id="discount-rules">
 
-    <form id="change" hidden method="post" action="/settings/">
-        {% csrf_token %}
-        <input name="algorithm" id="change-algorithm">
-    </form>
+                </div>
+                </br>
+                <div id="discount-rules-controls" style="display: none;">
+                    <button type=button  class="btn btn-default" onclick="addRule();">+</button>
+                    <button  type=button class="btn btn-default" onclick="remRule();">-</button>
+                </div>
 
+
+
+
+                <p class="text-center">
+
+                 </br>
+                <button type="button" class="btn btn-lg" onclick="sendSettings();">Сохранить</button>
+             </p>
+
+
+            </form>
+
+
+            <form id="change" hidden method="post" action="/settings/">
+                {% csrf_token %}
+                <input name="algorithm" id="change-algorithm">
+            </form>
+
+        </div>
+   </div>
+  <div class="tab-pane fade" id="workplace" role="tabpanel" aria-labelledby="workplace-tab">
+       <div class="jumbotron">
+            <p>Доступно касс: 5</p>
+           <hr />
+           <p>Касса "АВТОЗАВОДСКАЯ"</p>
+           <p>РН: 19382123123213, Адрес: г. Курск, ул. Можаевская, 25</p>
+           <p>Статус: онлайн</p>
+            <p>Ключ доступа FRONTOL - {{key}}</p>
+            <p><a href="/settings/frontol/"><i class="fa fa-download" aria-hidden="true"></i> Файл настроек FRONTOL</a></p>
+            <hr />
+       </div>
+  </div>
+  <div class="tab-pane fade" id="org" role="tabpanel" aria-labelledby="org-tab">
+      <div class="jumbotron">
+         <h5> Организация - {{org_name}}</h5>
+         <p>Активность до: {{active}}</p>
+         <hr />
+      </div>
+  </div>
 </div>
+
+
+
 
 <script>
     $('#id_algorithm').change(function() {
-        $('#change-algorithm').val($('#id_algorithm').val());
-        $('#change').submit();
+        if ($('#id_algorithm').val() == 'discount')
+        {
+            $('#discount-rules-controls').show();
+         }
+         else
+         {
+            $('#discount-rules-controls').hide();
+          }
+
+        //$('#change-algorithm').val($('#id_algorithm').val());
+        //$('#change').submit();
 
         });
+
+
+       function addRule()
+       {
+            var html= '<div class="form-row rule">  \
+                        <div class="col-3 ">    \
+                            <label>Процент скидки</label>  \
+                            <input type="number" min="0" class="form-control discount" placeholder="Процент скидки"> \
+                        </div> \
+                        <div class="col-3 "> \
+                            <label>Необходимые накопления</label> \
+                            <input type="number" min="0" class="form-control accum" placeholder="Необходимые накопления"> \
+                        </div> \
+                    </div>';
+            $('#discount-rules').append(html);
+       }
+
+        function remRule()
+       {
+
+            $('.rule').last().remove();
+       }
+
+
+       function makeDiscountRules()
+       {
+            var rules_list = {};
+            $.each($('.rule'), function(index, value){
+                    var dis = value.children[0].getElementsByClassName("discount")[0].value;
+                    var accum = value.children[1].getElementsByClassName("accum")[0].value;
+                    rules_list[dis] = parseFloat(accum);
+            });
+            return rules_list;
+       }
+
+
+       function sendSettings()
+       {
+            var rules = makeDiscountRules();
+            var data = {};
+            var form_data = $('#bonus-form').serializeArray();
+            $.each(form_data, function(index, value){
+                    data[value['name']] = value['value'];
+                });
+            data['rules']=rules;
+            $.ajax({
+            url: '/settings/save/',
+            type: "POST",
+            data: {
+              "data": JSON.stringify(data),
+            },
+            dataType: "json",
+            success: function (data) {
+              if (data.result) {
+                if (data.result == "ok"){
+                }}}
+              });
+    }
 
 </script>
 

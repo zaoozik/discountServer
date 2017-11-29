@@ -9,7 +9,7 @@ urlpatterns = [
         views.apiRemCardBonus, name='apiRemCardBonus'),
     url(r'^cards/vti_keeper/$',
         views.apiToCardFromService, name='apiToCardFromService'),
-    url(r'^get_plan/(?P<salt>0.[0-9]+)/$', views.apiGetDiscountPlan, name='apiGetDiscountPlan'),
+    url(r'^get_params/(?P<salt>0.[0-9]+)/$', views.apiGetParams, name='apiGetParams'),
 
 
 ]

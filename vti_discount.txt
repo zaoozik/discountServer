@@ -130,11 +130,11 @@ function afterClose()
 }
 
 
-function getDiscountPlan23423()
+function getParams()
 {
      var xhr = new ActiveXObject("MSXML2.XMLHTTP");
      var salt = Math.random();
-     xhr.open("POST", SERVER+"api/get_plan/"+ salt+"/", true);
+     xhr.open("POST", SERVER+"api/get_params/"+ salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "key=" + ACCESS_KEY;
      xhr.send(data);
@@ -144,25 +144,15 @@ function getDiscountPlan23423()
      }
      if(xhr.status === 200) {
         try{
-            plan = xhr.responseText;
-            if (plan == 'discount')
+            resp = xhr.responseText;
+            if (plan == '0')
             {
-               DISCOUNT_PLAN = plan
-               return true;
-            }  else if (plan == 'bonus')
-            {
-               DISCOUNT_PLAN = plan
-               return true;
-             }  else if (plan == 'combo')
-            {
-               DISCOUNT_PLAN = plan
-               return true;
-             }
-             else
-             {
-                 frontol.actions.showError("Дисконтная программа не найдена");
-                 return false;
+               return;
             }
+            var temp = resp.split(';',1);
+            max_bonus_percentage = parseFloat(temp[0]);
+            return;
+
         }
         catch(e){
             frontol.actions.showError(e);
@@ -171,7 +161,7 @@ function getDiscountPlan23423()
      }
      else if(xhr.status === 404)
      {
-          frontol.actions.showError("Дисконтная программа не найдена!");
+          frontol.actions.showError("Не удалось загрузить параметры!");
           return false;
      }
       else if(xhr.status === 503)
@@ -225,6 +215,8 @@ function getCard(Card)
             bonus = parseFloat(temp[0]);
             discount = parseFloat(temp[1]);
             accumulation = parseFloat(temp[2]);
+
+            getParams();
 
             if (bonus > 0)
             {

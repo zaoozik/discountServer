@@ -1,6 +1,7 @@
 from django.db import models
 from orgs import models as org_models
 import datetime
+import json
 
 
 # Create your models here.
@@ -40,6 +41,13 @@ class DiscountPlan (models.Model):
             return True
         else:
             return False
+
+    def get_params(self):
+        if self.algorithm == 'discount':
+            return None
+        temp = json.loads(self.parameters)
+        if type(temp) is dict:
+            return temp
 
     def __str__(self):
         return self.org.name + '_' + self.algorithm

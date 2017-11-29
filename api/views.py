@@ -286,7 +286,7 @@ def apiRemCardBonus(request, card_code, salt):
 
 
 @csrf_exempt
-def apiGetDiscountPlan(request, salt):
+def apiGetParams(request, salt):
     if request.method == 'POST':
         data = request.POST
         if ('key' in data):
@@ -298,8 +298,13 @@ def apiGetDiscountPlan(request, salt):
                 if cuser.user.is_active:
                     try:
                         d_plan = DiscountPlan.objects.get(org_id__exact=cuser.org.pk)
-                        algorithm = d_plan.algorithm
-                        return HttpResponse(algorithm)
+                        params = d_plan.get_params()
+                        if params:
+                            response = ("%s;" % params['max_bonus_percentage'])
+                        else:
+                            response = 0
+
+                        return HttpResponse(response)
 
                     except ObjectDoesNotExist as e:
                         return HttpResponse(status='404')

@@ -14,6 +14,7 @@ from users.models import UserCustom
 from .forms import CardForm, MassCardForm
 import json
 from datetime import datetime
+from django.db import transaction
 
 # Create your views here.
 
@@ -169,7 +170,7 @@ def maintenance(request):
                         return HttpResponse(json.dumps(response), content_type="application/json")
 
 
-
+@transaction.atomic
 @login_required(login_url='./login/')
 def mass_add(request):
     if request.method == "POST":
