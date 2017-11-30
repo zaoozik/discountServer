@@ -5,9 +5,6 @@ from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.db.models import Q
 from cards.models import Card
 from orgs.models import Org
-from cards.serializers import CardSerializer
-from rest_framework.renderers import JSONRenderer
-from rest_framework.parsers import JSONParser
 from django.contrib.auth.decorators import login_required
 from django.template import loader
 from users.models import UserCustom

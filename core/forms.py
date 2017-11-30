@@ -3,7 +3,7 @@ from .models import DiscountPlan
 
 
 class SettingsForm(forms.Form):
-    algorithm = forms.ChoiceField(DiscountPlan.algorithm_choices, label='Режим дисконтной системы')
+    #algorithm = forms.ChoiceField(DiscountPlan.algorithm_choices, label='Режим дисконтной системы')
 
     def __init__(self, *args, **kwargs):
         super(SettingsForm, self).__init__(*args, **kwargs)

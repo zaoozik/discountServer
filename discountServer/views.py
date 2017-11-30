@@ -89,11 +89,12 @@ def settings(request):
         template = loader.get_template('settings.html')
         return HttpResponse(template.render(response, request))
 
-    if request.method=='POST':
+    if request.method == 'POST':
         if 'cmd' in request.POST:
+            user = UserCustom.objects.get(user_id__exact=request.user.pk)
+            d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
+
             if request.POST['cmd'] == 'get':
-                user = UserCustom.objects.get(user_id__exact=request.user.pk)
-                d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
                 initials = json.loads(d_plan.parameters)
                 initials.update({'algorithm': d_plan.algorithm})
                 if d_plan.algorithm == 'bonus':
@@ -105,10 +106,26 @@ def settings(request):
                 template = loader.get_template('settings_data.html')
                 html = template.render({'form': form, 'org_name': user.org.name}, request)
                 return HttpResponse(html)
+            if request.POST['cmd'] == 'update':
+                if 'algorithm' in request.POST:
+                    algorithm = request.POST['algorithm']
+                    if algorithm == 'bonus':
+                        form = BonusForm()
+                        form.data['assume_delta'] = d_plan.time_delay
+                    if algorithm == 'discount':
+                        form = DiscountForm()
+                    if algorithm == 'combo':
+                        form = ComboForm()
+                        form.data['assume_delta'] = d_plan.time_delay
+                    template = loader.get_template('settings_data.html')
+                    html = template.render({'form': form, 'org_name': user.org.name}, request)
+                    return HttpResponse(html)
+
+
 
 @login_required
 def settingsSave(request):
-    if request.method=='POST':
+    if request.method == 'POST':
         if 'data' in request.POST:
             user = UserCustom.objects.get(user_id__exact=request.user.pk)
             data = json.loads(request.POST['data'])

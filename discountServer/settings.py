@@ -25,7 +25,7 @@ SECRET_KEY = 'vjzd2_yhidu!_%468+-0^!)7%f%1ypm=-@g=6s^@z47!y&!zs)'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.0.202', '127.0.0.1']
+ALLOWED_HOSTS = ['192.168.0.24', '127.0.0.1']
 
 
 # Application definition
@@ -37,7 +37,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
     'cards',
     'orgs',
     'api',
@@ -88,8 +87,9 @@ WSGI_APPLICATION = 'discountServer.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'HOST': 'localhost',
+        'PORT': 5432,
         'NAME': 'discount_db',
         'USER': 'discount_user',
         'PASSWORD': 'belomor'

@@ -1,6 +1,6 @@
     var buffer= '';
     var start = 0;
-    var count = 10;
+    var count = 50;
     var total =0;
     var elems_end = false;
     var selection_parameters ={
@@ -226,7 +226,7 @@ $(document).ready(function(){
 function dataUpdate(){
     var cmd = "update";
     start= 0;
-    count= 10;
+    count= 50;
     var data = {
             "start": start,
             "count": count,
@@ -374,7 +374,7 @@ function clearFilter(){
     };
     $('#showDeleted').prop('checked', false);
     start = 0;
-    count = 10;
+    count = 50;
     dataUpdate();
 }
 
