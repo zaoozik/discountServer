@@ -4,7 +4,9 @@ from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.template import loader
+from django.template import loader, RequestContext
+from django.template.loader import render_to_string
+
 from core.forms import BonusForm, DiscountForm, ComboForm
 from users.models import UserCustom
 from core.models import DiscountPlan
@@ -63,51 +65,55 @@ def signOff(request):
 @login_required
 def settings(request):
     if request.method=='GET':
-        user = UserCustom.objects.get(user_id__exact=request.user.pk)
-        user.init_frontol_access_key()
-        key = user.frontol_access_key
-        user.save()
-        add=''
-        try:
-            d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
-            initials = json.loads(d_plan.parameters)
-            initials.update({'algorithm': d_plan.algorithm})
-            if d_plan.algorithm=='bonus':
-                form = BonusForm(initials)
-                form.data['assume_delta'] = d_plan.time_delay
-            if d_plan.algorithm == 'discount':
-                form = DiscountForm(initials)
-            if d_plan.algorithm == 'combo':
-                form = ComboForm(initials)
-                form.data['assume_delta'] = d_plan.time_delay
-        except:
-            form = BonusForm()
-            add = '. Внимание! Сохраните настройки!'
-        response = {'form': form, 'org_name': user.org.name + add, 'key': key, 'active': user.active_to}
+        # user = UserCustom.objects.get(user_id__exact=request.user.pk)
+        # user.init_frontol_access_key()
+        # key = user.frontol_access_key
+        # user.save()
+        # add=''
+        # try:
+        #     d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
+        #     initials = json.loads(d_plan.parameters)
+        #     initials.update({'algorithm': d_plan.algorithm})
+        #     if d_plan.algorithm=='bonus':
+        #         form = BonusForm(initials)
+        #         form.data['assume_delta'] = d_plan.time_delay
+        #     if d_plan.algorithm == 'discount':
+        #         form = DiscountForm(initials)
+        #     if d_plan.algorithm == 'combo':
+        #         form = ComboForm(initials)
+        #         form.data['assume_delta'] = d_plan.time_delay
+        # except:
+        #     form = BonusForm()
+        #     add = '. Внимание! Сохраните настройки!'
+        response = {}
         template = loader.get_template('settings.html')
         return HttpResponse(template.render(response, request))
 
     if request.method=='POST':
-        if 'algorithm' in request.POST:
-            user = UserCustom.objects.get(user_id__exact=request.user.pk)
-            if request.POST['algorithm'] == 'bonus':
-                form = BonusForm(initial={'algorithm': 'bonus'})
-            elif request.POST['algorithm'] == 'discount':
-                form = DiscountForm(initial={'algorithm': 'discount'})
-            elif request.POST['algorithm'] == 'combo':
-                form = ComboForm(initial={'algorithm': 'combo'})
-
-            response = {'form': form, 'org_name': user.org.name}
-            template = loader.get_template('settings.html')
-            return HttpResponse(template.render(response, request))
+        if 'cmd' in request.POST:
+            if request.POST['cmd'] == 'get':
+                user = UserCustom.objects.get(user_id__exact=request.user.pk)
+                d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
+                initials = json.loads(d_plan.parameters)
+                initials.update({'algorithm': d_plan.algorithm})
+                if d_plan.algorithm == 'bonus':
+                    form = BonusForm(initial={'algorithm': 'bonus'})
+                elif d_plan.algorithm == 'discount':
+                    form = DiscountForm(initial={'algorithm': 'discount'})
+                elif d_plan.algorithm == 'combo':
+                    form = ComboForm(initial={'algorithm': 'combo'})
+                template = loader.get_template('settings_data.html')
+                html = template.render({'form': form, 'org_name': user.org.name}, request)
+                return HttpResponse(html)
 
 @login_required
 def settingsSave(request):
     if request.method=='POST':
-        if 'algorithm' in request.POST:
+        if 'data' in request.POST:
             user = UserCustom.objects.get(user_id__exact=request.user.pk)
-            if request.POST['algorithm'] == 'bonus':
-                form = BonusForm(request.POST)
+            data = json.loads(request.POST['data'])
+            if data['algorithm'] == 'bonus':
+                form = BonusForm(data)
                 if form.is_valid():
                     try:
                         d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)

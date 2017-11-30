@@ -1,0 +1,524 @@
+/*5.20.0*/
+/*UNICODE*/
+SET SQL DIALECT 3;
+SET NAMES UTF8;
+
+EXECUTE PROCEDURE MERGE_SETTING('StartScript','1', NULL, NULL,9);
+COMMIT;
+
+DELETE FROM ACTSCRIPT;
+INSERT INTO ACTSCRIPT("ID","CODE","NAME","DATA") VALUES (2158679,1,'vti_discount','/*
+/////ВТИ-СЕРВИС, 2017//////
+г. Курск, ул. Ватутина, 25
+---------------------------
+версия 5.1.0.0
+---------------------------
+Скрипт предназначен для обмена с дисконтным сервером для FRONTOL.
+
+
+*/
+
+
+function init()
+{
+ frontol.addEventListener("addCard", "getCard", true);
+ frontol.addEventListener("closeDocument", "beforeClose", true);
+ frontol.addEventListener("closeDocument", "afterClose", false);
+
+}
+
+var DISCOUNT_PLAN = null;
+var discount = 0;
+var bonus = 0;
+var accumulation = 0;
+var payValue = 0;
+var card_code = 0;
+var max_bonus_percentage = 100;
+var VTI_KEEPER = "http://localhost:8888";
+
+//Настройки скрипта
+var ACCESS_KEY = "695a6bb51078e5a5d64a3e6aa87bb7fad6ef5e310a218bcff6dd68590bf1c2f4";
+var SERVER = "http://192.168.0.202/";
+
+
+// Эту функцию следует указать в маркетинговой акции в качестве функции вычисления процентной скидки
+function addDiscountPay()
+{
+  return discount;
+}
+
+
+// Эту функцию следует указать в маркетинговой акции в качестве функции вычисления рублевой скидки (бонусов)
+function addBonusPay()
+{
+  var bonus_current;
+  var doc_sum = frontol.currentDocument.totalSum;
+  var bonus_limit = doc_sum * max_bonus_percentage / 100;
+  if (bonus_limit >= bonus)
+  {
+     bonus_current = bonus;
+  } else
+  {
+    bonus_current = bonus_limit;
+  }
+
+  if (bonus_current == 0)
+  {
+     return null;
+  }
+
+
+ if ( frontol.actions.showMessage("Вы можете оплатить бонусами " + bonus_current + ". Списать бонусы?", Button.YesNo, Icon.Question) == DialogResult.Yes)
+ {
+      payValue = frontol.actions.inputString("Введите сумму списания бонусов. Максимально: " + bonus_current, bonus_current, 10);
+      if (payValue == null)
+      {
+       return null;
+      }  else if  (parseFloat(payValue) > bonus_current)
+      {
+            frontol.actions.showMessage("Сумма списания превышает возможную сумму. Отмена скидок!");
+            return null;
+      }
+      bonus = bonus - payValue;
+      return parseFloat(payValue);
+
+
+ } else
+ {
+   return null;
+   }
+}
+
+
+
+
+
+function beforeClose()
+{
+         //Списываем бонусы
+     if (payValue > 0 )
+     {
+      if (! remCardBonus(payValue))   // если списались
+         {
+
+                 // если не списались
+             frontol.actions.wait("Сервер не отвечает. Списываем бонусы локально",2);
+             if (! remCardBonusLocal(payValue))
+             {
+               for (var i=1; i< 11; i++ )
+                {
+                    frontol.currentDocument.stornoPayment(i);
+                 }
+                    frontol.actions.cancel();
+             }
+
+         }
+       }
+       frontol.currentDocument.userValues.set("bonus", bonus + payValue);
+       frontol.currentDocument.userValues.set("bonus_reduce", payValue);
+       frontol.currentDocument.userValues.set("discount", discount);
+       frontol.currentDocument.userValues.set("accum", accumulation);
+}
+
+
+function afterClose()
+{    if (frontol.currentDocument.cardValues != ""){
+       // frontol.actions.showMessage( frontol.currentDocument.type.name);
+        if (frontol.currentDocument.type.name ==  "ВОЗВРАТ")
+        {
+           var doc_sum = 0 - frontol.currentDocument.payment.sumInBaseCurrency;
+        }
+        else
+        {
+            var doc_sum = frontol.currentDocument.totalSum;
+        }
+      if ( ! addCardAccum(doc_sum)) {
+          addCardAccumLocal(doc_sum);
+      };
+      }
+}
+
+
+function getParams()
+{
+     var xhr = new ActiveXObject("MSXML2.XMLHTTP");
+     var salt = Math.random();
+     xhr.open("POST", SERVER+"api/get_params/"+ salt+"/", true);
+     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+     var data = "key=" + ACCESS_KEY;
+     xhr.send(data);
+     var plan = '''';
+     while(xhr.readyState != 4){
+        frontol.actions.wait("Идет запрос к дисконтному серверу", 1);
+     }
+     if(xhr.status === 200) {
+        try{
+            resp = xhr.responseText;
+            if (plan == ''0'')
+            {
+               return;
+            }
+            var temp = resp.split('';'',1);
+            max_bonus_percentage = parseFloat(temp[0]);
+            return;
+
+        }
+        catch(e){
+            frontol.actions.showError(e);
+            return null;
+        }
+     }
+     else if(xhr.status === 404)
+     {
+          frontol.actions.showError("Не удалось загрузить параметры!");
+          return false;
+     }
+      else if(xhr.status === 503)
+     {
+          frontol.actions.showError("Проверьте параметры доступа и действие подписки");
+          return false;
+     }
+     else
+     {
+        frontol.actions.showError("Ошибка получения данных с дисконтного сервиса");
+        return false;
+     }
+}
+
+
+
+function getCard(Card)
+{
+      card_code = Card.value;
+
+      if (frontol.currentDocument.cardValues != "")
+      {
+          frontol.actions.showError("Карта клиента уже введена! Воспользуйтесь кнопкой отмены введенных карт.");
+          return null;
+      }
+     // if (! getDiscountPlan())
+     // {
+    //         return null;
+    //  }
+
+      payValue=0;
+      bonus=0;
+      discount=0;
+      accumulation=0;
+      var xhr = new ActiveXObject("MSXML2.XMLHTTP");
+      var salt = Math.random();
+     xhr.open("POST", SERVER+"api/cards/"+card_code+"_" + salt+"/", true);
+     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+     var data = "key=" + ACCESS_KEY;
+     xhr.send(data);
+     var Disc = 0;
+     while(xhr.readyState != 4){
+        frontol.actions.wait("Идет запрос к дисконтному серверу", 1);
+     }
+     if(xhr.status === 200) {
+        try{
+            Disc = xhr.responseText;
+            var temp = Disc.split(''#'',3);
+            var msg = '''';
+
+            bonus = parseFloat(temp[0]);
+            discount = parseFloat(temp[1]);
+            accumulation = parseFloat(temp[2]);
+
+            getParams();
+
+            if (bonus > 0)
+            {
+               msg= "Бонусов: "+bonus + ";";
+            }
+            if (discount >0)
+            {
+               msg +=  "Скидка: "+temp[1] + "%";
+            }
+
+            if (msg != '''')
+            {
+             frontol.actions.showMessage(msg, Icon.Asterisk);
+            }
+
+
+            return ;
+        }
+        catch(e){
+            frontol.actions.showError(e);
+            return null;
+        }
+     }
+     else if(xhr.status === 404)
+     {
+          frontol.actions.showError("Карта " + card_code+" не найдена");
+          return null;
+     }
+      else if(xhr.status === 503)
+     {
+          frontol.actions.showError("Проверьте параметры доступа и действие подписки");
+          return null;
+     }
+     else
+     {
+        frontol.actions.showMessage("Ошибка получения данных с дисконтного сервера. Проверьте подключение к интернету. БОНУСЫ И СКИДКИ НЕДОСТУПНЫ.");
+
+        return;
+     }
+
+
+}
+//служебная функция
+function addDocDataToRequest(data)
+{
+    var doc_number = frontol.currentDocument.number;
+    var doc_external_id =frontol.currentDocument.externalID;
+    var doc_close_user = frontol.currentDocument.closeUser.name;
+    var session = frontol.sessionNumber;
+    var shop = frontol.shopNumber;
+    var workplace = frontol.codeWorkplace;
+     data+= "&doc_number="+doc_number;
+     data+= "&doc_external_id="+doc_external_id;
+     data+= "&doc_close_user=" + doc_close_user;
+     data+= "&session=" + session;
+     data+= "&shop=" + shop;
+     data+= "&workplace=" + workplace;
+     return data;
+}
+
+
+function addCardAccum(value)
+{
+    var xhr = new ActiveXObject("MSXML2.XMLHTTP");
+    var salt = Math.random();
+
+    var doc_number = frontol.currentDocument.number;
+    var doc_external_id =frontol.currentDocument.externalID;
+    var doc_close_user = frontol.currentDocument.closeUser.name;
+    var session = frontol.sessionNumber;
+    var shop = frontol.shopNumber;
+    var workplace = frontol.codeWorkplace;
+
+     xhr.open("POST", SERVER+"api/cards/add_accum/"+card_code+"_" + salt+"/", true);
+     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+     var data = "key=" + ACCESS_KEY;
+     data+= "&value="+value;
+     // информация о документе
+     data = addDocDataToRequest(data);
+
+     xhr.send(data);
+     var Disc = 0;
+     while(xhr.readyState != 4) {
+        frontol.actions.wait("Идет запрос к дисконтному серверу", 1);
+     }
+     if(xhr.status === 200) {
+        try{
+            Disc = new Number(parseFloat(xhr.responseText));
+            if (Disc == value)
+            {
+             return true;
+            }    else
+            {
+             return false;
+            }
+        }
+        catch(e){
+            frontol.actions.showError(e);
+            return false;
+        }
+     }
+     else
+     {
+        frontol.actions.wait("Ошибка получения данных с дисконтного сервиса. Проверьте доступ к интернету! Транзакция будет записана на локальном компьютере.", 2);
+        return false;
+     }
+     return false;
+}
+
+function addCardAccumLocal(value)
+{
+    var xhr = new ActiveXObject("MSXML2.XMLHTTP");
+    var salt = Math.random();
+
+    var doc_number = frontol.currentDocument.number;
+    var doc_external_id =frontol.currentDocument.externalID;
+    var doc_close_user = frontol.currentDocument.closeUser.name;
+    var session = frontol.sessionNumber;
+    var shop = frontol.shopNumber;
+    var workplace = frontol.codeWorkplace;
+
+     xhr.open("POST", VTI_KEEPER, true);
+     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+     var data = "key=" + ACCESS_KEY;
+     data+= "&value="+value;
+     data+="&card="+card_code;
+     data+="&type=add";
+      //информация о документе
+     data = addDocDataToRequest(data);
+
+     xhr.send(data);
+     //var Disc = "";
+     while(xhr.readyState != 4) {
+        frontol.actions.wait("Идет запрос к VTI DISCOUNT KEEPER", 1);
+     }
+     if(xhr.status === 200) {
+        try{
+
+            return  parseFloat(xhr.responseText);
+
+        }
+        catch(e){
+            frontol.actions.showError(e);
+            return false;
+        }
+     }
+     else
+     {
+        frontol.actions.showMessage("Ошибка подключения к VTI DISCOUNT KEEPER. Проверьте, запущена ли служба VtiDiscountKeeper");
+        return false;
+     }
+     return false;
+}
+
+
+function remCardBonus(val)
+{
+    var xhr = new ActiveXObject("MSXML2.XMLHTTP");
+       var salt = Math.random();
+     xhr.open("POST", SERVER+"api/cards/rem_bonus/"+card_code+"_" + salt+"/", true);
+     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+     var data = "key=" + ACCESS_KEY;
+     data+= "&value="+val;
+     // информация о документе
+     data = addDocDataToRequest(data);
+     xhr.send(data);
+     var Disc = 0;
+     while(xhr.readyState != 4){
+        frontol.actions.wait("Идет запрос к дисконтному серверу", 1);
+     }
+     if(xhr.status === 200) {
+        try{
+            Disc = new Number(parseFloat(xhr.responseText));
+            return Disc;
+        }
+        catch(e){
+            frontol.actions.showError(e);
+            return false;
+        }
+     }
+     else
+     {
+        frontol.actions.showMessage("Ошибка получения данных с дисконтного сервиса");
+        return false;
+     }
+}
+
+function remCardBonusLocal(val)
+{
+    var xhr = new ActiveXObject("MSXML2.XMLHTTP");
+       var salt = Math.random();
+     xhr.open("POST", VTI_KEEPER, true);
+     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+     var data = "key=" + ACCESS_KEY;
+     data+= "&value="+val;
+     data+="&card="+card_code;
+     data+="&type=rem";
+     // информация о документе
+     data = addDocDataToRequest(data);
+     xhr.send(data);
+     var Disc = 0;
+     while(xhr.readyState != 4){
+        frontol.actions.wait("Идет запрос к VTI DISCOUNT KEEPER", 1);
+     }
+     if(xhr.status === 200) {
+        try{
+            Disc = new Number(parseFloat(xhr.responseText));
+            return Disc;
+        }
+        catch(e){
+            frontol.actions.showError(e);
+            return false;
+        }
+     }
+     else
+     {
+        frontol.actions.showMessage("Ошибка подключения к VTI DISCOUNT KEEPER. Проверьте, запущена ли служба VtiDiscountKeeper");
+        return false;
+     }
+}
+');
+COMMIT;
+/*
+
+*/
+
+DELETE FROM MARKETACT;
+INSERT INTO MARKETACT("ID","CODE","NAME","TEXT","ISFOLDER","PARENTID","DESCRIPTION","DATETIMEBEG","DATETIMEEND","ACTV","PRIORITY","COLOR","DELETED","OPTIONS","RECURRENCEINFO","RECURRENCEINDEX","RESOURCEID","EVENTTYPE","TASKINDEX","TASKSTATUS","GROUPID","LOCATION","MESSAGE","TYPE","ALWAYSEXECUTE","COLLATERULE","POSCOLLATERULE") VALUES (2157618,1,'Корневая группа','Корневая группа',1,0,'',NULL,NULL,1,0,16777215,0,0,' ',0,0,0,0,0,0,'','',0,0,4,NULL);
+INSERT INTO MARKETACT("ID","CODE","NAME","TEXT","ISFOLDER","PARENTID","DESCRIPTION","DATETIMEBEG","DATETIMEEND","ACTV","PRIORITY","COLOR","DELETED","OPTIONS","RECURRENCEINFO","RECURRENCEINDEX","RESOURCEID","EVENTTYPE","TASKINDEX","TASKSTATUS","GROUPID","LOCATION","MESSAGE","TYPE","ALWAYSEXECUTE","COLLATERULE","POSCOLLATERULE") VALUES (2157619,2,'Спец.цены','Спец.цены',1,2157618,'',NULL,NULL,1,0,16777215,0,0,' ',0,0,0,0,0,0,'','',1,0,4,NULL);
+INSERT INTO MARKETACT("ID","CODE","NAME","TEXT","ISFOLDER","PARENTID","DESCRIPTION","DATETIMEBEG","DATETIMEEND","ACTV","PRIORITY","COLOR","DELETED","OPTIONS","RECURRENCEINFO","RECURRENCEINDEX","RESOURCEID","EVENTTYPE","TASKINDEX","TASKSTATUS","GROUPID","LOCATION","MESSAGE","TYPE","ALWAYSEXECUTE","COLLATERULE","POSCOLLATERULE") VALUES (2157620,3,'Скидки','Скидки',1,2157618,'',NULL,NULL,1,0,16777215,0,0,' ',0,0,0,0,0,0,'','',2,0,1,NULL);
+INSERT INTO MARKETACT("ID","CODE","NAME","TEXT","ISFOLDER","PARENTID","DESCRIPTION","DATETIMEBEG","DATETIMEEND","ACTV","PRIORITY","COLOR","DELETED","OPTIONS","RECURRENCEINFO","RECURRENCEINDEX","RESOURCEID","EVENTTYPE","TASKINDEX","TASKSTATUS","GROUPID","LOCATION","MESSAGE","TYPE","ALWAYSEXECUTE","COLLATERULE","POSCOLLATERULE") VALUES (2157621,4,'Прочие акции','Прочие акции',1,2157618,'',NULL,NULL,1,0,16777215,0,0,' ',0,0,0,0,0,0,'','',3,0,4,NULL);
+INSERT INTO MARKETACT("ID","CODE","NAME","TEXT","ISFOLDER","PARENTID","DESCRIPTION","DATETIMEBEG","DATETIMEEND","ACTV","PRIORITY","COLOR","DELETED","OPTIONS","RECURRENCEINFO","RECURRENCEINDEX","RESOURCEID","EVENTTYPE","TASKINDEX","TASKSTATUS","GROUPID","LOCATION","MESSAGE","TYPE","ALWAYSEXECUTE","COLLATERULE","POSCOLLATERULE") VALUES (2158718,6,'Дисконтная программа (ВТИ)','',0,2157620,'','09.11.2016','10.11.2040 23:59:00',1,0,255,0,1,' ',-1,NULL,0,NULL,NULL,NULL,'','',2,0,NULL,NULL);
+COMMIT;
+/*
+MARKETACT,TASKLINKS,2157618,,MARKETACT,RECURRENCEINFO,2157618,,MARKETACT,TASKLINKS,2157619,,MARKETACT,RECURRENCEINFO,2157619,,MARKETACT,TASKLINKS,2157620,,MARKETACT,RECURRENCEINFO,2157620,,MARKETACT,TASKLINKS,2157621,,MARKETACT,RECURRENCEINFO,2157621,,MARKETACT,RECURRENCEINFO,2158718,CA
+*/
+
+DELETE FROM ACTIVITIES;
+INSERT INTO ACTIVITIES("ID","CODE","NAME","TEXT","DELETED","MARKETACTID") VALUES (2158720,3,'Списание бонусов','',0,2158718);
+INSERT INTO ACTIVITIES("ID","CODE","NAME","TEXT","DELETED","MARKETACTID") VALUES (2158742,4,'Автоматическая скидка по карте','',0,2158718);
+COMMIT;
+/*
+
+*/
+
+DELETE FROM DCE_MODULE;
+INSERT INTO DCE_MODULE("ID","X","Y","VIEW_TYPE","STOCK_ID","TYPE_CODE") VALUES (2158728,-183,28,NULL,2158720,42);
+INSERT INTO DCE_MODULE("ID","X","Y","VIEW_TYPE","STOCK_ID","TYPE_CODE") VALUES (2158723,127,373,NULL,2158720,31);
+INSERT INTO DCE_MODULE("ID","X","Y","VIEW_TYPE","STOCK_ID","TYPE_CODE") VALUES (2158743,-137,99,NULL,2158742,41);
+INSERT INTO DCE_MODULE("ID","X","Y","VIEW_TYPE","STOCK_ID","TYPE_CODE") VALUES (2158745,170,422,NULL,2158742,31);
+COMMIT;
+/*
+
+*/
+
+DELETE FROM DCE_DATA;
+COMMIT;
+/*
+
+*/
+
+DELETE FROM FREQCHANGECONDITIONS;
+COMMIT;
+/*
+
+*/
+
+DELETE FROM RARECHANGECONDITIONS;
+INSERT INTO RARECHANGECONDITIONS("ID","ACTIVITIESID","CONDITIONTYPE","CLIENTID","CLIENTCLASSIFIERID","SEX","CCARDCLASSIFIERID","HALLID","HALLPLACEID","ENTERPRISEID","ENTERPRISECLASSIFIERID","PAYMENTID","DCE_MODULE_ID","GRPCCARDID") VALUES (2158724,2158720,31,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,2158723,2158686);
+INSERT INTO RARECHANGECONDITIONS("ID","ACTIVITIESID","CONDITIONTYPE","CLIENTID","CLIENTCLASSIFIERID","SEX","CCARDCLASSIFIERID","HALLID","HALLPLACEID","ENTERPRISEID","ENTERPRISECLASSIFIERID","PAYMENTID","DCE_MODULE_ID","GRPCCARDID") VALUES (2158746,2158742,31,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,2158745,2158686);
+COMMIT;
+/*
+
+*/
+
+DELETE FROM OPERATION;
+INSERT INTO OPERATION("ID","ACTIVITIESID","OPERATIONTYPE","DISCOUNTENABLED","DELETED","DCE_MODULE_ID","WARECLASSIFIERID","PRICE","DISCOUNT","DISCOUNTTYPE","POSNUMBER","OTHERDISCOUNT","SORTTYPE","WAREID","MESSAGE","ASPECTVALUE1ID","ASPECTVALUE2ID","ASPECTVALUE3ID","ASPECTVALUE4ID","ASPECTVALUE5ID","QUANTITY","COUNTERTYPEID","COUNTERGRPCARDID","COUNTERCODE","COUNTERSPECIDENTPARAM","COUNTERCHANGETYPE","COUNTERCHANGEVALUE","COUNTERMULTIPLYVALUE","MINPAYSUM","MAXPAYPERCENT","PAYLIMITTYPE","MULTIPLYVALUE","POSITIONTYPE","DISCOUNTREGION","VALUETYPE","MINVALUE","MAXVALUE","PRICEKINDID","GIFTCARDKINDID","RATE","SHOWTIME","ICON","DESTINATION","PERIODBEGIN","PERIODBEGINTYPE","PERIODEND","PERIODENDTYPE","ACCRUALTYPE") VALUES (2158729,2158720,42,NULL,0,2158728,NULL,NULL,'addBonusPay',1,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,2,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0);
+INSERT INTO OPERATION("ID","ACTIVITIESID","OPERATIONTYPE","DISCOUNTENABLED","DELETED","DCE_MODULE_ID","WARECLASSIFIERID","PRICE","DISCOUNT","DISCOUNTTYPE","POSNUMBER","OTHERDISCOUNT","SORTTYPE","WAREID","MESSAGE","ASPECTVALUE1ID","ASPECTVALUE2ID","ASPECTVALUE3ID","ASPECTVALUE4ID","ASPECTVALUE5ID","QUANTITY","COUNTERTYPEID","COUNTERGRPCARDID","COUNTERCODE","COUNTERSPECIDENTPARAM","COUNTERCHANGETYPE","COUNTERCHANGEVALUE","COUNTERMULTIPLYVALUE","MINPAYSUM","MAXPAYPERCENT","PAYLIMITTYPE","MULTIPLYVALUE","POSITIONTYPE","DISCOUNTREGION","VALUETYPE","MINVALUE","MAXVALUE","PRICEKINDID","GIFTCARDKINDID","RATE","SHOWTIME","ICON","DESTINATION","PERIODBEGIN","PERIODBEGINTYPE","PERIODEND","PERIODENDTYPE","ACCRUALTYPE") VALUES (2158744,2158742,41,NULL,0,2158743,NULL,NULL,'addDiscountPay()',0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,2,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0);
+COMMIT;
+/*
+
+*/
+
+DELETE FROM SPECIALPRICE;
+COMMIT;
+/*
+
+*/
+
+DELETE FROM WAREDISCOUNT;
+COMMIT;
+/*
+
+*/
+
+EXECUTE PROCEDURE SET_GID(2158758);

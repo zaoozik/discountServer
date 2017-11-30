@@ -1,0 +1,55 @@
+
+  <div class="tab-pane fade show active" id="discount" role="tabpanel" aria-labelledby="discount-tab">
+      <div class="jumbotron">
+            <form  id="bonus-form" class="form-group">
+                        {{ form }}
+
+                <div id="discount-rules">
+
+                </div>
+                </br>
+                <div id="discount-rules-controls" style="display: none;">
+                    <button type=button  class="btn btn-default" onclick="addRule();">+</button>
+                    <button  type=button class="btn btn-default" onclick="remRule();">-</button>
+                </div>
+
+
+
+
+                <p class="text-center">
+
+                 </br>
+                <button type="button" class="btn btn-lg" onclick="sendSettings();">Сохранить</button>
+             </p>
+
+
+            </form>
+
+
+            <form id="change" hidden method="post" action="/settings/">
+
+                <input name="algorithm" id="change-algorithm">
+            </form>
+
+        </div>
+   </div>
+  <div class="tab-pane fade" id="workplace" role="tabpanel" aria-labelledby="workplace-tab">
+       <div class="jumbotron">
+            <p>Доступно касс: 5</p>
+           <hr />
+           <p>Касса "АВТОЗАВОДСКАЯ"</p>
+           <p>РН: 19382123123213, Адрес: г. Курск, ул. Можаевская, 25</p>
+           <p>Статус: онлайн</p>
+            <p>Ключ доступа FRONTOL - {{key}}</p>
+            <p><a href="/settings/frontol/"><i class="fa fa-download" aria-hidden="true"></i> Файл настроек FRONTOL</a></p>
+            <hr />
+       </div>
+  </div>
+  <div class="tab-pane fade" id="org" role="tabpanel" aria-labelledby="org-tab">
+      <div class="jumbotron">
+         <h5> Организация - {{org_name}}</h5>
+         <p>Активность до: {{active}}</p>
+         <hr />
+      </div>
+  </div>
+
