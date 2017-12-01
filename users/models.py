@@ -14,7 +14,7 @@ class UserCustom(models.Model):
 
     class Meta:
         indexes = [
-            models.Index(fields=['frontol_access_key'], name = 'frontol_access_key_index'),
+            models.Index(fields=['frontol_access_key'], name='frontol_access_key_index'),
         ]
 
     def cu_is_active(self):

@@ -3,12 +3,13 @@ from .models import Card
 
 
 class CardForm(forms.Form):
-    code = forms.CharField(label='КОД')
-    holder_name = forms.CharField(label='ФИО Владельца')
-    accumulation = forms.FloatField(label='Накопления',  min_value=0, disabled=False, initial=0)
-    bonus = forms.FloatField(label='Бонусы', min_value=0, disabled=False, initial=0)
-    discount = forms.FloatField(label='Скидка', min_value=0, disabled=False, initial=0)
-    type = forms.ChoiceField(choices=Card.type_choices, label='Тип карты')
+    code = forms.CharField(label='КОД*')
+    holder_name = forms.CharField(label='ФИО Владельца', required=False)
+    holder_phone = forms.CharField(label='Телефон', required=False)
+    accumulation = forms.FloatField(label='Накопления*',  min_value=0, disabled=False, initial=0)
+    bonus = forms.FloatField(label='Бонусы*', min_value=0, disabled=False, initial=0)
+    discount = forms.FloatField(label='Скидка*', min_value=0, disabled=False, initial=0)
+    type = forms.ChoiceField(choices=Card.type_choices, label='Тип карты*')
     reg_date = forms.DateField(disabled=True, required=False, label='Дата регистрации')
     changes_date = forms.DateField(disabled=True, required=False, label='Дата последних изменений')
     last_transaction_date = forms.DateField(disabled=True, required=False, label='Дата последней транзакции')

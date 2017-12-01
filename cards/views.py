@@ -91,6 +91,7 @@ def maintenance(request):
                                 card = Card()
                             card.code = form.cleaned_data['code']
                             card.holder_name = form.cleaned_data['holder_name']
+                            card.holder_phone = form.cleaned_data['holder_phone']
                             card.bonus = form.cleaned_data['bonus']
                             card.discount = form.cleaned_data['discount']
                             card.accumulation = form.cleaned_data['accumulation']
@@ -118,6 +119,7 @@ def maintenance(request):
                         data = {
                             "code": card.code,
                             "holder_name": card.holder_name,
+                            "holder_phone": card.holder_phone,
                             "accumulation" : card.accumulation,
                             "bonus": card.bonus,
                             "discount": card.discount,

@@ -56,6 +56,7 @@ function saveCard(){
     var card_data = {
                         "code": $('#id_code').val(),
                         "holder_name": $('#id_holder_name').val(),
+                        "holder_phone": $('#id_holder_phone').val(),
                         "accumulation":  $('#id_accumulation').val(),
                         "bonus": $('#id_bonus').val(),
                         "discount":  $('#id_discount').val(),
@@ -89,6 +90,7 @@ function saveCard(){
 function clearForm(){
           $('#id_code').val('');
            $('#id_holder_name').val('');
+           $('#id_holder_phone').val('');
             $('#id_accumulation').val(0);
             $('#id_bonus').val(0);
             $('#id_discount').val(0);
@@ -118,6 +120,7 @@ function getCard(card_code)
                 cData = response.data;
                 $('#id_code').val(cData.code);
                  $('#id_holder_name').val(cData.holder_name);
+                  $('#id_holder_phone').val(cData.holder_phone);
                   $('#id_accumulation').val(cData.accumulation);
                    $('#id_bonus').val(cData.bonus);
                     $('#id_discount').val(cData.discount);

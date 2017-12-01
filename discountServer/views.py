@@ -5,13 +5,11 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.template import loader, RequestContext
-from django.template.loader import render_to_string
 
-from core.forms import BonusForm, DiscountForm, ComboForm
+from core.forms import BonusForm, DiscountForm, ComboForm, AlgorithmForm
 from users.models import UserCustom
 from core.models import DiscountPlan
-from transactions.models import Transaction
-from transactions.forms import ControlsForm
+
 
 
 
@@ -21,7 +19,7 @@ def index(request):
 
 
 def signIn(request):
-    response={}
+    response = {}
     if request.method == "GET":
         return render(request, 'login.html')
     if request.method == "POST":
@@ -64,27 +62,7 @@ def signOff(request):
 
 @login_required
 def settings(request):
-    if request.method=='GET':
-        # user = UserCustom.objects.get(user_id__exact=request.user.pk)
-        # user.init_frontol_access_key()
-        # key = user.frontol_access_key
-        # user.save()
-        # add=''
-        # try:
-        #     d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
-        #     initials = json.loads(d_plan.parameters)
-        #     initials.update({'algorithm': d_plan.algorithm})
-        #     if d_plan.algorithm=='bonus':
-        #         form = BonusForm(initials)
-        #         form.data['assume_delta'] = d_plan.time_delay
-        #     if d_plan.algorithm == 'discount':
-        #         form = DiscountForm(initials)
-        #     if d_plan.algorithm == 'combo':
-        #         form = ComboForm(initials)
-        #         form.data['assume_delta'] = d_plan.time_delay
-        # except:
-        #     form = BonusForm()
-        #     add = '. Внимание! Сохраните настройки!'
+    if request.method == 'GET':
         response = {}
         template = loader.get_template('settings.html')
         return HttpResponse(template.render(response, request))
@@ -93,34 +71,108 @@ def settings(request):
         if 'cmd' in request.POST:
             user = UserCustom.objects.get(user_id__exact=request.user.pk)
             d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
-
+            response = {}
             if request.POST['cmd'] == 'get':
                 initials = json.loads(d_plan.parameters)
-                initials.update({'algorithm': d_plan.algorithm})
                 if d_plan.algorithm == 'bonus':
-                    form = BonusForm(initial={'algorithm': 'bonus'})
+                    form = BonusForm()
+                    alg_form = AlgorithmForm(initial={'algorithm': 'bonus'})
                 elif d_plan.algorithm == 'discount':
-                    form = DiscountForm(initial={'algorithm': 'discount'})
+                    form = DiscountForm()
+                    alg_form = AlgorithmForm(initial={'algorithm': 'discount'})
+                    response = {'rules': initials['rules']}
                 elif d_plan.algorithm == 'combo':
-                    form = ComboForm(initial={'algorithm': 'combo'})
+                    form = ComboForm()
+                    alg_form = AlgorithmForm(initial={'algorithm': 'combo'})
+                    response = {'rules': initials['rules']}
+
                 template = loader.get_template('settings_data.html')
-                html = template.render({'form': form, 'org_name': user.org.name}, request)
-                return HttpResponse(html)
+                html = template.render({'form': form, 'alg_form': alg_form, 'org_name': user.org.name}, request)
+                response.update({"html": html, "algorithm": d_plan.algorithm})
+                return HttpResponse(json.dumps(response), content_type="application/json")
             if request.POST['cmd'] == 'update':
                 if 'algorithm' in request.POST:
                     algorithm = request.POST['algorithm']
                     if algorithm == 'bonus':
                         form = BonusForm()
                         form.data['assume_delta'] = d_plan.time_delay
+                        alg_form = AlgorithmForm(initial={'algorithm': 'bonus'})
                     if algorithm == 'discount':
                         form = DiscountForm()
+                        alg_form = AlgorithmForm(initial={'algorithm': 'discount'})
                     if algorithm == 'combo':
                         form = ComboForm()
                         form.data['assume_delta'] = d_plan.time_delay
+                        alg_form = AlgorithmForm(initial={'algorithm': 'combo'})
                     template = loader.get_template('settings_data.html')
-                    html = template.render({'form': form, 'org_name': user.org.name}, request)
-                    return HttpResponse(html)
+                    html = template.render({'form': form, 'alg_form': alg_form, 'org_name': user.org.name}, request)
+                    response = {"html": html, "algorithm": d_plan.algorithm}
+                    return HttpResponse(json.dumps(response), content_type="application/json")
+            if request.POST['cmd'] == 'save':
+                if 'algorithm' in request.POST:
+                    algorithm = request.POST['algorithm']
+                    if 'data' in request.POST:
+                        data = json.loads(request.POST['data'])
+                        if algorithm == 'bonus':
+                            form = BonusForm(data)
+                            if form.is_valid():
+                                try:
+                                    d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
+                                except:
+                                    d_plan = DiscountPlan()
+                                d_plan.algorithm = algorithm
+                                parameters = {
+                                    'bonus_cost': form.cleaned_data['bonus_cost'],
+                                    'max_bonus_percentage': form.cleaned_data['max_bonus_percentage'],
+                                    'round': form.cleaned_data['round'],
+                                    'min_transaction': form.cleaned_data['min_transaction'],
+                                    'zeroing_delta': form.cleaned_data['zeroing_delta'],
+                                }
+                                d_plan.time_delay = form.cleaned_data['assume_delta']
+                                d_plan.parameters = json.dumps(parameters)
+                                d_plan.org = user.org
+                                d_plan.save()
+                                return redirect('/settings/')
+                        elif algorithm == 'discount':
+                            form = DiscountForm(data)
+                            if form.is_valid():
+                                try:
+                                    d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
+                                except:
+                                    d_plan = DiscountPlan()
+                                d_plan.algorithm = algorithm
+                                parameters = {
+                                    'rules': data['rules']
+                                }
+                                d_plan.time_delay = 0
+                                d_plan.parameters = json.dumps(parameters)
+                                d_plan.org = user.org
+                                d_plan.save()
+                                return redirect('/settings/')
 
+                        elif algorithm == 'combo':
+                            form = ComboForm(data)
+                            if form.is_valid():
+                                try:
+                                    d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
+                                except:
+                                    d_plan = DiscountPlan()
+                                d_plan.algorithm = algorithm
+                                parameters = {
+                                    'rules': data['rules'],
+                                    'bonus_cost': form.cleaned_data['bonus_cost'],
+                                    'max_bonus_percentage': form.cleaned_data['max_bonus_percentage'],
+                                    'round': form.cleaned_data['round'],
+                                    'min_transaction': form.cleaned_data['min_transaction'],
+                                    'zeroing_delta': form.cleaned_data['zeroing_delta'],
+                                }
+                                d_plan.time_delay = form.cleaned_data['assume_delta']
+                                d_plan.parameters = json.dumps(parameters)
+                                d_plan.org = user.org
+                                d_plan.save()
+
+                                response = {"result": "ok"}
+                                return redirect('/settings/')
 
 
 @login_required

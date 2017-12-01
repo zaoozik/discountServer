@@ -1,24 +1,22 @@
 
   <div class="tab-pane fade show active" id="discount" role="tabpanel" aria-labelledby="discount-tab">
-      <div class="jumbotron">
+      <div class="">
             <hr>
-          <label for="id_algorithm">Режим работы дисконтной системы</label>
-          <select class="form-control" id="id_algorithm">
-              <option value="bonus">Бонусы</option>
-              <option value="discount">Накопительная скидка</option>
-              <option value="combo">Комбинированный</option>
-          </select>
+          {{ alg_form }}
+
           <hr>
 
             <form  id="bonus-form" class="form-group">
                         {{ form }}
 
+
+                <label id="discount-label" style="display: none;"> Правила начисления скидок: </label>
                 <div id="discount-rules">
 
                 </div>
                 </br>
                 <div id="discount-rules-controls" style="display: none;">
-                    <button type=button  class="btn btn-default" onclick="addRule();">+</button>
+                    <button type=button  class="btn btn-default" onclick="addRule('','');">+</button>
                     <button  type=button class="btn btn-default" onclick="remRule();">-</button>
                 </div>
 
@@ -28,22 +26,19 @@
                 <p class="text-center">
 
                  </br>
-                <button type="button" class="btn btn-lg" onclick="sendSettings();">Сохранить</button>
+                <button type="button" class="btn btn-lg" onclick="sendSettings('save');">Сохранить</button>
              </p>
 
 
             </form>
 
 
-            <form id="change" hidden method="post" action="/settings/">
-
-                <input name="algorithm" id="change-algorithm">
-            </form>
 
         </div>
    </div>
   <div class="tab-pane fade" id="workplace" role="tabpanel" aria-labelledby="workplace-tab">
-       <div class="jumbotron">
+       <div class="">
+           <br>
             <p>Доступно касс: 5</p>
            <hr />
            <p>Касса "АВТОЗАВОДСКАЯ"</p>
@@ -55,7 +50,8 @@
        </div>
   </div>
   <div class="tab-pane fade" id="org" role="tabpanel" aria-labelledby="org-tab">
-      <div class="jumbotron">
+      <div class="">
+          <br>
          <h5> Организация - {{org_name}}</h5>
          <p>Активность до: {{active}}</p>
          <hr />

@@ -14,6 +14,7 @@ class Card (models.Model):
     bonus = models.FloatField(default=0, verbose_name='Бонусы')
     discount = models.FloatField(default=0, verbose_name='Процентная скидка')
     holder_name = models.CharField(max_length=100, default='', verbose_name='ФИО владельца')
+    holder_phone = models.CharField(max_length=20, default='', verbose_name='Телефон')
     org = models.ForeignKey(org_models.Org, on_delete=models.CASCADE, verbose_name='Организация')
     deleted = models.CharField(max_length=1, default='n', verbose_name='Признак удаления (y/n)')
     type = models.CharField(max_length=17, default='bonus', choices=type_choices, verbose_name='Тип карты')

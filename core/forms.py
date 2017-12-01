@@ -11,6 +11,10 @@ class SettingsForm(forms.Form):
             self.fields[field].widget.attrs['class'] = 'form-control '
 
 
+class AlgorithmForm(SettingsForm):
+    algorithm = forms.ChoiceField(DiscountPlan.algorithm_choices, label='Режим дисконтной системы')
+
+
 class BonusForm(SettingsForm):
     round_choices = (
         ('math', 'Математическое округление'),
@@ -45,7 +49,7 @@ class DiscountForm(SettingsForm):
         (12, 'Через год')
     )
 
-    rules = forms.CharField(widget=forms.TextInput, label='Правила начисления скидок')
+    #rules = forms.CharField(widget=forms.TextInput, label='Правила начисления скидок')
 
 
 class ComboForm(SettingsForm):
@@ -63,7 +67,6 @@ class ComboForm(SettingsForm):
         (6, 'Через полгода'),
         (12, 'Через год')
     )
-    rules = forms.CharField(widget=forms.TextInput, label='Правила начисления скидок')
 
     bonus_cost = forms.FloatField(label='Стоимость 1 бонуса', min_value=1, initial=100)
     min_transaction = forms.FloatField(label='Минимальный порог оплаты для зачисления Бонуса',
@@ -74,3 +77,5 @@ class ComboForm(SettingsForm):
     assume_delta = forms.FloatField(label='Задержка перед начислением бонуса, часы', min_value=0, initial=0)
     zeroing_delta = forms.IntegerField(min_value=0, initial=0,
                                        label='Обнуление бонусов неактивных карт через выбранное количество дней. "0" - не обнулять')
+
+    #rules = forms.CharField(widget=forms.TextInput, label='Правила начисления скидок')

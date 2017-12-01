@@ -14,7 +14,7 @@ class DiscountParameters:
 
     def load(self, params):
         if type(params) == dict:
-            self.body = sorted(params.items(), key=lambda item: item[0])
+            self.body = sorted(params.items(), key=lambda item: float(item[0]))
             self.len = len(self.body)
             if self.len > 0:
                 self.current = 0
@@ -63,14 +63,16 @@ def count(value, card,  d_plan, transaction):
     value = float(value)
 
     if 'rules' in parameters:
-        rules = eval(parameters['rules'])
+        rules = parameters['rules']
+        for a in rules.keys():
+            rules[float(a)] = rules.pop(a)
     else:
         return None
 
     rules = DiscountParameters().load(rules)
     next_discount = None
     if value >= 0:
-        while rules.current<=rules.last:
+        while rules.current <= rules.last:
             if rules.get_current()[0] == card.discount:
                 next_discount = rules.next()
                 if next_discount is None:
