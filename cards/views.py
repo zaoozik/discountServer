@@ -56,7 +56,7 @@ def listCards(request):
                 if data["count"] > total:
                     data["count"] = total
                 cards = Card.objects.filter(q).order_by(selection_parameters["sort"]).all()[data["start"]:data["start"]+data["count"]]
-                resp_cards=[]
+                resp_cards = []
                 for card in cards:
                     resp_cards.append(
                         {
@@ -75,7 +75,7 @@ def listCards(request):
 @login_required(login_url='./login/')
 def maintenance(request):
     response = {}
-    if request.method=="POST":
+    if request.method == "POST":
         post = request.POST
         user = UserCustom.objects.get(user_id__exact=request.user.pk)
         if "cmd" in post:

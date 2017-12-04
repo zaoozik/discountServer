@@ -10,6 +10,8 @@ urlpatterns = [
     url(r'^cards/vti_keeper/$',
         views.apiToCardFromService, name='apiToCardFromService'),
     url(r'^get_params/(?P<salt>0.[0-9]+)/$', views.apiGetParams, name='apiGetParams'),
+    url(r'^open_ses/(?P<salt>0.[0-9]+)/$', views.apiOpenSession, name='apiOpenSession'),
+    url(r'^close_ses/(?P<salt>0.[0-9]+)/$', views.apiCloseSession, name='apiCloseSession'),
 
 
 ]

@@ -2,7 +2,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpRequest, HttpResponse
 from cards.models import Card
-from users.models import UserCustom
+from users.models import UserCustom, CashBox
 from transactions.models import Transaction
 from core.models import DiscountPlan, Operations
 from queues.models import Task
@@ -36,16 +36,67 @@ def identify_task_operation(card, d_plan):
 
 
 
+
+def check_license(key, ses_key):
+    try:
+        box = CashBox.get_by_key(key)
+        if box:
+            if box.session_key is None:
+                return False
+            if box.session_key == ses_key:
+                return box
+            else:
+                return False
+        else:
+            return False
+    except ObjectDoesNotExist as e:
+        return False
+
+
+
+@csrf_exempt
+def apiOpenSession(request, salt):
+    if request.method == 'POST':
+        data = request.POST
+        if ('key' in data) and ('session_key' in data):
+            box = CashBox.get_by_key(data['key'])
+            if box:
+                if not box.online:
+                    box.session_key = data['session_key']
+                    box.set_online()
+                    return HttpResponse("1", status=200)
+                return HttpResponse("1", status=503)
+    return HttpResponse(status=404)
+
+
+@csrf_exempt
+def apiCloseSession(request, salt):
+    if request.method == 'POST':
+        data = request.POST
+        if 'key' in data:
+            box = CashBox.get_by_key(data['key'])
+            if box:
+                box.session_key = None
+                box.set_offline()
+                return HttpResponse("1", status=200)
+    return HttpResponse(status=404)
+
+
 # Create your views here.
 @csrf_exempt
 def apiGetCard(request, card_code, salt):
     if request.method == 'POST':
         data = request.POST
-        if ('key' in data):
-            try:
-                cuser = UserCustom.objects.get(frontol_access_key__exact=data['key'])
-            except:
-                cuser = None
+        if ('key' in data) and ('session_key' in data):
+            box = check_license(data['key'], data['session_key'])
+            if box:
+                try:
+                    cuser = box.user
+                except:
+                    return HttpResponse(status=403)
+                    cuser = None
+            else:
+                return HttpResponse(status=403)
             if cuser is not None:
                 if cuser.user.is_active:
                     try:
@@ -88,11 +139,15 @@ def apiAddAccumToCard(request, card_code, salt):
     t_type = Operations.sell
     if request.method == 'POST':
         data = request.POST
-        if ('key' in data):
-            try:
-                cuser = UserCustom.objects.get(frontol_access_key__exact=data['key'])
-            except:
-                cuser = None
+        if ('key' in data) and ('session_key' in data):
+            box = check_license(data['key'], data['session_key'])
+            if box:
+                try:
+                    cuser = box.user
+                except:
+                    cuser = None
+            else:
+                return HttpResponse(status=403)
             if cuser is not None:
                 if cuser.user.is_active:
                     try:
@@ -159,10 +214,12 @@ def apiToCardFromService(request):
     if request.method == 'POST':
         data = request.POST
         if ('key' in data) and ('vtikeeper' in data):
-            try:
-                cuser = UserCustom.objects.get(frontol_access_key__exact=data['key'])
-            except:
-                cuser = None
+            box = CashBox.get_by_key(data['key'])
+            if box:
+                try:
+                    cuser = box.user
+                except:
+                    cuser = None
             if cuser is not None:
                 if cuser.user.is_active:
                     try:
@@ -208,7 +265,7 @@ def apiToCardFromService(request):
                                 else:
                                     return HttpResponse(status='404')
                             if data['type'] == 'rem':
-                                t_type=Operations.bonus_reduce
+                                t_type = Operations.bonus_reduce
                                 if 'value' in data and 'card' in data:
                                     trans = Transaction().create(data)
                                     trans.date = datetime.strptime(data['datetime'], "%d.%m.%Y %H:%M:%S")
@@ -243,14 +300,18 @@ def apiToCardFromService(request):
 
 @csrf_exempt
 def apiRemCardBonus(request, card_code, salt):
-    t_type= Operations.bonus_reduce
+    t_type = Operations.bonus_reduce
     if request.method == 'POST':
         data = request.POST
-        if ('key' in data):
-            try:
-                cuser = UserCustom.objects.get(frontol_access_key__exact=data['key'])
-            except:
-                cuser = None
+        if ('key' in data) and ('session_key' in data):
+            box = check_license(data['key'], data['session_key'])
+            if box:
+                try:
+                    cuser = box.user
+                except:
+                    cuser = None
+            else:
+                return HttpResponse(status=403)
             if cuser is not None:
                 if cuser.user.is_active:
                     try:
@@ -289,11 +350,15 @@ def apiRemCardBonus(request, card_code, salt):
 def apiGetParams(request, salt):
     if request.method == 'POST':
         data = request.POST
-        if ('key' in data):
-            try:
-                cuser = UserCustom.objects.get(frontol_access_key__exact=data['key'])
-            except:
-                cuser = None
+        if ('key' in data) and ('session_key' in data):
+            box = check_license(data['key'], data['session_key'])
+            if box:
+                try:
+                    cuser = box.user
+                except:
+                    cuser = None
+            else:
+                return HttpResponse(status=403)
             if cuser is not None:
                 if cuser.user.is_active:
                     try:

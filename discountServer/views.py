@@ -87,7 +87,13 @@ def settings(request):
                     response = {'rules': initials['rules']}
 
                 template = loader.get_template('settings_data.html')
-                html = template.render({'form': form, 'alg_form': alg_form, 'org_name': user.org.name}, request)
+                html = template.render({'form': form,
+                                        'alg_form': alg_form,
+                                        'org_name': user.org.name,
+                                        'licenses_count': user.licenses_count,
+                                        'cashboxes': user.get_cashboxes(),
+                                        'active': user.active_to
+                                        }, request)
                 response.update({"html": html, "algorithm": d_plan.algorithm})
                 return HttpResponse(json.dumps(response), content_type="application/json")
             if request.POST['cmd'] == 'update':
@@ -105,7 +111,13 @@ def settings(request):
                         form.data['assume_delta'] = d_plan.time_delay
                         alg_form = AlgorithmForm(initial={'algorithm': 'combo'})
                     template = loader.get_template('settings_data.html')
-                    html = template.render({'form': form, 'alg_form': alg_form, 'org_name': user.org.name}, request)
+                    html = template.render({'form': form,
+                                            'alg_form': alg_form,
+                                            'org_name': user.org.name,
+                                            'licenses_count': user.licenses_count,
+                                            'cashboxes': user.get_cashboxes(),
+                                            'active': user.active_to
+                                            }, request)
                     response = {"html": html, "algorithm": d_plan.algorithm}
                     return HttpResponse(json.dumps(response), content_type="application/json")
             if request.POST['cmd'] == 'save':
