@@ -1,0 +1,37 @@
+
+      <div class="">
+            <hr>
+          {{ alg_form }}
+
+          <hr>
+
+            <form  id="bonus-form" class="form-group">
+                        {{ form }}
+
+
+                <label id="discount-label" style="display: none;"> Правила начисления скидок: </label>
+                <div id="discount-rules">
+
+                </div>
+                </br>
+                <div id="discount-rules-controls" style="display: none;">
+                    <button type=button  class="btn btn-default" onclick="addRule('','');">+</button>
+                    <button  type=button class="btn btn-default" onclick="remRule();">-</button>
+                </div>
+
+
+
+
+                <p class="text-center">
+
+                 </br>
+                <button type="button" class="btn btn-lg" onclick="sendSettings('save', 'discount');">Сохранить</button>
+             </p>
+
+
+            </form>
+
+
+        </div>
+
+

@@ -36,19 +36,29 @@
        }
 
 
-       function sendSettings(cmd)
+       function sendSettings(cmd, type)
        {
-            cur_alg = $('#id_algorithm').val();
             var data = {};
-            var rules = makeDiscountRules();
-            var form_data = $('#bonus-form').serializeArray();
-            $.each(form_data, function(index, value){
-                    data[value['name']] = value['value'];
-                });
-            data['rules']=rules;
+            if (type == 'discount')
+            {
+                var rules = makeDiscountRules();
+                var form_data = $('#bonus-form').serializeArray();
+                $.each(form_data, function(index, value){
+                        data[value['name']] = value['value'];
+                    });
+                data['rules']=rules;
+            }
+             if (type == 'workplace')
+            {
+                $('#CashBoxModal').modal('hide');
+                var form_data = $('#CashBoxForm').serializeArray();
+                $.each(form_data, function(index, value){
+                        data[value['name']] = value['value'];
+                    });
+            }
 
             $.ajax({
-            url: '/settings/',
+            url: '/settings/'+type+'/',
             type: "POST",
             data: {
                 "cmd": cmd,
@@ -58,8 +68,9 @@
             dataType: "json",
             success: function (data) {
               if (data.html) {
-               $('#settingsContent').empty();
-                 $('#settingsContent').append(data.html);
+
+               $('#'+type).empty();
+                 $('#'+type).append(data.html);
                   $(document).change();
 
                 }
@@ -90,6 +101,7 @@
                     if (data.result == "ok")
                     {
                         alert('Сохранено');
+                        sendSettings('get', type);
                     }
                 }
 
@@ -98,17 +110,45 @@
     }
 
 
+ function deleteWorkplace(key)
+       {
+            var data = {};
+            data = {'key':key};
+            cmd = 'delete';
+            type = 'workplace';
+
+            $.ajax({
+            url: '/settings/'+type+'/',
+            type: "POST",
+            data: {
+                "cmd": cmd,
+              "data": JSON.stringify(data),
+            },
+            dataType: "json",
+            success: function (data) {
+              if (data.result) {
+                  if (data.result == "ok")
+                        {
+                            sendSettings('get', type);
+                        }
+              }
+
+
+              }});
+    }
 
 
 
 $(document).ready( function(){
 
-    sendSettings('get');
+    sendSettings('get', 'discount');
+    sendSettings('get', 'workplace');
+    sendSettings('get', 'org');
     });
 
 
     $(document).on('change', '#id_algorithm', function() {
-        sendSettings('update');
+        sendSettings('update', 'discount');
 
 
         });

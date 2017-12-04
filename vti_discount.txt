@@ -15,6 +15,9 @@ function init()
  frontol.addEventListener("addCard", "getCard", true);
  frontol.addEventListener("closeDocument", "beforeClose", true);
  frontol.addEventListener("closeDocument", "afterClose", false);
+  frontol.addEventListener("openSession", "onSesOpen", false);
+   frontol.addEventListener("closeSession", "onSesClose", false);
+
 
 }
 
@@ -29,7 +32,7 @@ var VTI_KEEPER = "http://localhost:8888";
 
 //Настройки скрипта
 var ACCESS_KEY = "695a6bb51078e5a5d64a3e6aa87bb7fad6ef5e310a218bcff6dd68590bf1c2f4";
-var SERVER = "http://192.168.0.202/";
+var SERVER = "http://192.168.0.24/";
 
 
 // Эту функцию следует указать в маркетинговой акции в качестве функции вычисления процентной скидки
@@ -38,6 +41,80 @@ function addDiscountPay()
   return discount;
 }
 
+
+function onSesOpen()
+{
+
+     var xhr = new ActiveXObject("MSXML2.XMLHTTP");
+     var salt = Math.random();
+     var ses_key = String(Math.random()*Math.random()*Math.random());
+
+     xhr.open("POST", SERVER+"api/open_ses/"+ salt+"/", true);
+     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+     var data = "key=" + ACCESS_KEY;
+     data += "&session_key="+ ses_key;
+     xhr.send(data);
+     while(xhr.readyState != 4){
+        frontol.actions.wait("Идет запрос к дисконтному серверу", 1);
+     }
+     if(xhr.status === 200) {
+        try{
+            resp = xhr.responseText;
+            if (resp == '1')
+            {
+               frontol.userValues.set("user_session_key", ses_key);
+               return;
+            }
+
+        }
+        catch(e){
+            frontol.actions.showError(e);
+            return null;
+        }
+     }
+     else if(xhr.status === 404)
+     {
+          frontol.actions.showError("Не удалось авторизовать Frontol. Обратитесь в тех-поддержку.");
+     }
+
+
+}
+
+function onSesClose()
+{
+
+     var xhr = new ActiveXObject("MSXML2.XMLHTTP");
+     var salt = Math.random();
+
+     xhr.open("POST", SERVER+"api/close_ses/"+ salt+"/", true);
+     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+     var data = "key=" + ACCESS_KEY;
+     xhr.send(data);
+     while(xhr.readyState != 4){
+        frontol.actions.wait("Идет запрос к дисконтному серверу", 1);
+     }
+     if(xhr.status === 200) {
+        try{
+            resp = xhr.responseText;
+            if (resp == '1')
+            {
+               frontol.userValues.set("user_session_key", "null");
+               return;
+            }
+
+        }
+        catch(e){
+            frontol.actions.showError(e);
+            return null;
+        }
+     }
+     else if(xhr.status == 404)
+     {
+          frontol.actions.showError("Не удалось закрыть смену в ВТИ-ДИСКОНТ. Обратитесь в тех-поддержку.");
+     }
+
+
+}
 
 // Эту функцию следует указать в маркетинговой акции в качестве функции вычисления рублевой скидки (бонусов)
 function addBonusPay()
@@ -137,12 +214,13 @@ function getParams()
      xhr.open("POST", SERVER+"api/get_params/"+ salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "key=" + ACCESS_KEY;
+     data += "&session_key=" + frontol.userValues.get("user_session_key");
      xhr.send(data);
      var plan = '';
      while(xhr.readyState != 4){
         frontol.actions.wait("Идет запрос к дисконтному серверу", 1);
      }
-     if(xhr.status === 200) {
+     if(xhr.status == 200) {
         try{
             resp = xhr.responseText;
             if (plan == '0')
@@ -162,6 +240,11 @@ function getParams()
      else if(xhr.status === 404)
      {
           frontol.actions.showError("Не удалось загрузить параметры!");
+          return false;
+     }
+      else if(xhr.status == 403)
+     {
+          frontol.actions.showError("Не удалось авторизовать кассу на сервере. Возможно смена не открыта.");
           return false;
      }
       else if(xhr.status === 503)
@@ -201,6 +284,7 @@ function getCard(Card)
      xhr.open("POST", SERVER+"api/cards/"+card_code+"_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "key=" + ACCESS_KEY;
+     data += "&session_key=" + frontol.userValues.get("user_session_key");
      xhr.send(data);
      var Disc = 0;
      while(xhr.readyState != 4){
@@ -244,6 +328,11 @@ function getCard(Card)
      {
           frontol.actions.showError("Карта " + card_code+" не найдена");
           return null;
+     }
+      else if(xhr.status == 403)
+     {
+          frontol.actions.showError("Не удалось авторизовать кассу на сервере. Возможно смена не открыта.");
+          return false;
      }
       else if(xhr.status === 503)
      {
@@ -293,6 +382,7 @@ function addCardAccum(value)
      xhr.open("POST", SERVER+"api/cards/add_accum/"+card_code+"_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "key=" + ACCESS_KEY;
+     data += "&session_key=" + frontol.userValues.get("user_session_key");
      data+= "&value="+value;
      // информация о документе
      data = addDocDataToRequest(data);
@@ -317,6 +407,11 @@ function addCardAccum(value)
             frontol.actions.showError(e);
             return false;
         }
+     }
+      else if(xhr.status === 403)
+     {
+          frontol.actions.showError("Не удалось авторизовать кассу на сервере. Возможно смена не открыта.");
+          return false;
      }
      else
      {
@@ -379,6 +474,7 @@ function remCardBonus(val)
      xhr.open("POST", SERVER+"api/cards/rem_bonus/"+card_code+"_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "key=" + ACCESS_KEY;
+     data += "&session_key=" + frontol.userValues.get("user_session_key");
      data+= "&value="+val;
      // информация о документе
      data = addDocDataToRequest(data);
@@ -396,6 +492,11 @@ function remCardBonus(val)
             frontol.actions.showError(e);
             return false;
         }
+     }
+      else if(xhr.status === 403)
+     {
+          frontol.actions.showError("Не удалось авторизовать кассу на сервере. Возможно смена не открыта.");
+          return false;
      }
      else
      {

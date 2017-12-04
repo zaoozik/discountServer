@@ -24,19 +24,24 @@ function init()
  frontol.addEventListener("addCard", "getCard", true);
  frontol.addEventListener("closeDocument", "beforeClose", true);
  frontol.addEventListener("closeDocument", "afterClose", false);
+  frontol.addEventListener("openSession", "onSesOpen", false);
+   frontol.addEventListener("closeSession", "onSesClose", false);
+
 
 }
 
 var DISCOUNT_PLAN = null;
 var discount = 0;
 var bonus = 0;
+var accumulation = 0;
 var payValue = 0;
 var card_code = 0;
 var max_bonus_percentage = 100;
+var VTI_KEEPER = "http://localhost:8888";
 
 //Настройки скрипта
 #ACCESS_KEY
-var SERVER = "http://192.168.0.202/";
+var SERVER = "http://192.168.0.24/";
 
 
 // Эту функцию следует указать в маркетинговой акции в качестве функции вычисления процентной скидки
@@ -45,6 +50,80 @@ function addDiscountPay()
   return discount;
 }
 
+
+function onSesOpen()
+{
+
+     var xhr = new ActiveXObject("MSXML2.XMLHTTP");
+     var salt = Math.random();
+     var ses_key = String(Math.random()*Math.random()*Math.random());
+
+     xhr.open("POST", SERVER+"api/open_ses/"+ salt+"/", true);
+     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+     var data = "key=" + ACCESS_KEY;
+     data += "&session_key="+ ses_key;
+     xhr.send(data);
+     while(xhr.readyState != 4){
+        frontol.actions.wait("Идет запрос к дисконтному серверу", 1);
+     }
+     if(xhr.status === 200) {
+        try{
+            resp = xhr.responseText;
+            if (resp == ''1'')
+            {
+               frontol.userValues.set("user_session_key", ses_key);
+               return;
+            }
+
+        }
+        catch(e){
+            frontol.actions.showError(e);
+            return null;
+        }
+     }
+     else if(xhr.status === 404)
+     {
+          frontol.actions.showError("Не удалось авторизовать Frontol. Обратитесь в тех-поддержку.");
+     }
+
+
+}
+
+function onSesClose()
+{
+
+     var xhr = new ActiveXObject("MSXML2.XMLHTTP");
+     var salt = Math.random();
+
+     xhr.open("POST", SERVER+"api/close_ses/"+ salt+"/", true);
+     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+     var data = "key=" + ACCESS_KEY;
+     xhr.send(data);
+     while(xhr.readyState != 4){
+        frontol.actions.wait("Идет запрос к дисконтному серверу", 1);
+     }
+     if(xhr.status === 200) {
+        try{
+            resp = xhr.responseText;
+            if (resp == ''1'')
+            {
+               frontol.userValues.set("user_session_key", "null");
+               return;
+            }
+
+        }
+        catch(e){
+            frontol.actions.showError(e);
+            return null;
+        }
+     }
+     else if(xhr.status == 404)
+     {
+          frontol.actions.showError("Не удалось закрыть смену в ВТИ-ДИСКОНТ. Обратитесь в тех-поддержку.");
+     }
+
+
+}
 
 // Эту функцию следует указать в маркетинговой акции в качестве функции вычисления рублевой скидки (бонусов)
 function addBonusPay()
@@ -96,64 +175,71 @@ function beforeClose()
          //Списываем бонусы
      if (payValue > 0 )
      {
-      if (remCardBonus(payValue) != payValue)   // если списались
+      if (! remCardBonus(payValue))   // если списались
          {
 
                  // если не списались
-             frontol.actions.showError("Невозможно списать бонусы!");
-             frontol.currentDocument.recalculateAllDiscounts();
+             frontol.actions.wait("Сервер не отвечает. Списываем бонусы локально",2);
+             if (! remCardBonusLocal(payValue))
+             {
+               for (var i=1; i< 11; i++ )
+                {
+                    frontol.currentDocument.stornoPayment(i);
+                 }
+                    frontol.actions.cancel();
+             }
 
-               }
+         }
        }
        frontol.currentDocument.userValues.set("bonus", bonus + payValue);
        frontol.currentDocument.userValues.set("bonus_reduce", payValue);
        frontol.currentDocument.userValues.set("discount", discount);
-       frontol.currentDocument.userValues.set("accum", 1234);
+       frontol.currentDocument.userValues.set("accum", accumulation);
 }
 
 
 function afterClose()
 {    if (frontol.currentDocument.cardValues != ""){
-      if ( ! addCardAccum(frontol.currentDocument.totalSum)) {
-          frontol.actions.showError("Невозможно добавить накопления на карту!");
+       // frontol.actions.showMessage( frontol.currentDocument.type.name);
+        if (frontol.currentDocument.type.name ==  "ВОЗВРАТ")
+        {
+           var doc_sum = 0 - frontol.currentDocument.payment.sumInBaseCurrency;
+        }
+        else
+        {
+            var doc_sum = frontol.currentDocument.totalSum;
+        }
+      if ( ! addCardAccum(doc_sum)) {
+          addCardAccumLocal(doc_sum);
       };
       }
 }
 
 
-function getDiscountPlan23423()
+function getParams()
 {
      var xhr = new ActiveXObject("MSXML2.XMLHTTP");
      var salt = Math.random();
-     xhr.open("POST", SERVER+"api/get_plan/"+ salt+"/", true);
+     xhr.open("POST", SERVER+"api/get_params/"+ salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "key=" + ACCESS_KEY;
+     data += "&session_key=" + frontol.userValues.get("user_session_key");
      xhr.send(data);
      var plan = '''';
      while(xhr.readyState != 4){
         frontol.actions.wait("Идет запрос к дисконтному серверу", 1);
      }
-     if(xhr.status === 200) {
+     if(xhr.status == 200) {
         try{
-            plan = xhr.responseText;
-            if (plan == ''discount'')
+            resp = xhr.responseText;
+            if (plan == ''0'')
             {
-               DISCOUNT_PLAN = plan
-               return true;
-            }  else if (plan == ''bonus'')
-            {
-               DISCOUNT_PLAN = plan
-               return true;
-             }  else if (plan == ''combo'')
-            {
-               DISCOUNT_PLAN = plan
-               return true;
-             }
-             else
-             {
-                 frontol.actions.showError("Дисконтная программа не найдена");
-                 return false;
+               return;
             }
+            var temp = resp.split('';'',1);
+            max_bonus_percentage = parseFloat(temp[0]);
+            return;
+
         }
         catch(e){
             frontol.actions.showError(e);
@@ -162,7 +248,12 @@ function getDiscountPlan23423()
      }
      else if(xhr.status === 404)
      {
-          frontol.actions.showError("Дисконтная программа не найдена!");
+          frontol.actions.showError("Не удалось загрузить параметры!");
+          return false;
+     }
+      else if(xhr.status == 403)
+     {
+          frontol.actions.showError("Не удалось авторизовать кассу на сервере. Возможно смена не открыта.");
           return false;
      }
       else if(xhr.status === 503)
@@ -196,11 +287,13 @@ function getCard(Card)
       payValue=0;
       bonus=0;
       discount=0;
+      accumulation=0;
       var xhr = new ActiveXObject("MSXML2.XMLHTTP");
       var salt = Math.random();
      xhr.open("POST", SERVER+"api/cards/"+card_code+"_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "key=" + ACCESS_KEY;
+     data += "&session_key=" + frontol.userValues.get("user_session_key");
      xhr.send(data);
      var Disc = 0;
      while(xhr.readyState != 4){
@@ -209,11 +302,14 @@ function getCard(Card)
      if(xhr.status === 200) {
         try{
             Disc = xhr.responseText;
-            var temp = Disc.split(''#'',2);
+            var temp = Disc.split(''#'',3);
             var msg = '''';
 
             bonus = parseFloat(temp[0]);
-            discount = parseFloat(temp[1])
+            discount = parseFloat(temp[1]);
+            accumulation = parseFloat(temp[2]);
+
+            getParams();
 
             if (bonus > 0)
             {
@@ -242,6 +338,11 @@ function getCard(Card)
           frontol.actions.showError("Карта " + card_code+" не найдена");
           return null;
      }
+      else if(xhr.status == 403)
+     {
+          frontol.actions.showError("Не удалось авторизовать кассу на сервере. Возможно смена не открыта.");
+          return false;
+     }
       else if(xhr.status === 503)
      {
           frontol.actions.showError("Проверьте параметры доступа и действие подписки");
@@ -249,7 +350,8 @@ function getCard(Card)
      }
      else
      {
-        frontol.actions.showError("Ошибка получения данных с дисконтного сервиса");
+        frontol.actions.showMessage("Ошибка получения данных с дисконтного сервера. Проверьте подключение к интернету. БОНУСЫ И СКИДКИ НЕДОСТУПНЫ.");
+
         return;
      }
 
@@ -289,6 +391,7 @@ function addCardAccum(value)
      xhr.open("POST", SERVER+"api/cards/add_accum/"+card_code+"_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "key=" + ACCESS_KEY;
+     data += "&session_key=" + frontol.userValues.get("user_session_key");
      data+= "&value="+value;
      // информация о документе
      data = addDocDataToRequest(data);
@@ -314,9 +417,59 @@ function addCardAccum(value)
             return false;
         }
      }
+      else if(xhr.status === 403)
+     {
+          frontol.actions.showError("Не удалось авторизовать кассу на сервере. Возможно смена не открыта.");
+          return false;
+     }
      else
      {
-        frontol.actions.showError("Ошибка получения данных с дисконтного сервиса");
+        frontol.actions.wait("Ошибка получения данных с дисконтного сервиса. Проверьте доступ к интернету! Транзакция будет записана на локальном компьютере.", 2);
+        return false;
+     }
+     return false;
+}
+
+function addCardAccumLocal(value)
+{
+    var xhr = new ActiveXObject("MSXML2.XMLHTTP");
+    var salt = Math.random();
+
+    var doc_number = frontol.currentDocument.number;
+    var doc_external_id =frontol.currentDocument.externalID;
+    var doc_close_user = frontol.currentDocument.closeUser.name;
+    var session = frontol.sessionNumber;
+    var shop = frontol.shopNumber;
+    var workplace = frontol.codeWorkplace;
+
+     xhr.open("POST", VTI_KEEPER, true);
+     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+     var data = "key=" + ACCESS_KEY;
+     data+= "&value="+value;
+     data+="&card="+card_code;
+     data+="&type=add";
+      //информация о документе
+     data = addDocDataToRequest(data);
+
+     xhr.send(data);
+     //var Disc = "";
+     while(xhr.readyState != 4) {
+        frontol.actions.wait("Идет запрос к VTI DISCOUNT KEEPER", 1);
+     }
+     if(xhr.status === 200) {
+        try{
+
+            return  parseFloat(xhr.responseText);
+
+        }
+        catch(e){
+            frontol.actions.showError(e);
+            return false;
+        }
+     }
+     else
+     {
+        frontol.actions.showMessage("Ошибка подключения к VTI DISCOUNT KEEPER. Проверьте, запущена ли служба VtiDiscountKeeper");
         return false;
      }
      return false;
@@ -330,6 +483,7 @@ function remCardBonus(val)
      xhr.open("POST", SERVER+"api/cards/rem_bonus/"+card_code+"_" + salt+"/", true);
      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
      var data = "key=" + ACCESS_KEY;
+     data += "&session_key=" + frontol.userValues.get("user_session_key");
      data+= "&value="+val;
      // информация о документе
      data = addDocDataToRequest(data);
@@ -345,12 +499,52 @@ function remCardBonus(val)
         }
         catch(e){
             frontol.actions.showError(e);
-            return 0;
+            return false;
+        }
+     }
+      else if(xhr.status === 403)
+     {
+          frontol.actions.showError("Не удалось авторизовать кассу на сервере. Возможно смена не открыта.");
+          return false;
+     }
+     else
+     {
+        frontol.actions.showMessage("Ошибка получения данных с дисконтного сервиса");
+        return false;
+     }
+}
+
+function remCardBonusLocal(val)
+{
+    var xhr = new ActiveXObject("MSXML2.XMLHTTP");
+       var salt = Math.random();
+     xhr.open("POST", VTI_KEEPER, true);
+     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+     var data = "key=" + ACCESS_KEY;
+     data+= "&value="+val;
+     data+="&card="+card_code;
+     data+="&type=rem";
+     // информация о документе
+     data = addDocDataToRequest(data);
+     xhr.send(data);
+     var Disc = 0;
+     while(xhr.readyState != 4){
+        frontol.actions.wait("Идет запрос к VTI DISCOUNT KEEPER", 1);
+     }
+     if(xhr.status === 200) {
+        try{
+            Disc = new Number(parseFloat(xhr.responseText));
+            return Disc;
+        }
+        catch(e){
+            frontol.actions.showError(e);
+            return false;
         }
      }
      else
      {
-        frontol.actions.showError("Ошибка получения данных с дисконтного сервиса");
+        frontol.actions.showMessage("Ошибка подключения к VTI DISCOUNT KEEPER. Проверьте, запущена ли служба VtiDiscountKeeper");
+        return false;
      }
 }
 ');
@@ -402,7 +596,7 @@ COMMIT;
 
 DELETE FROM RARECHANGECONDITIONS;
 INSERT INTO RARECHANGECONDITIONS("ID","ACTIVITIESID","CONDITIONTYPE","CLIENTID","CLIENTCLASSIFIERID","SEX","CCARDCLASSIFIERID","HALLID","HALLPLACEID","ENTERPRISEID","ENTERPRISECLASSIFIERID","PAYMENTID","DCE_MODULE_ID","GRPCCARDID") VALUES (2158724,2158720,31,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,2158723,2158686);
-INSERT INTO RARECHANGECONDITIONS("ID","ACTIVITIESID","CONDITIONTYPE","CLIENTID","CLIENTCLASSIFIERID","SEX","CCARDCLASSIFIERID","HALLID","HALLPLACEID","ENTERPRISEID","ENTERPRISECLASSIFIERID","PAYMENTID","DCE_MODULE_ID","GRPCCARDID") VALUES (2158746,2158742,31,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,2158745,2158686);
+INSERT INTO RARECHANGECONDITIONS("ID","ACTIVITIESID","CONDITIONTYPE","CLIENTID","CLIENTCLASSIFIERID","SEX","CCARDCLASSIFIERID","HALLID","HALLPLACEID","ENTERPRISEID","ENTERPRISECLASSIFIERID","PAYMENTID","DCE_MODULE_ID","GRPCCARDID") VALUES (2158746,2158742,31,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,2158745,2159133);
 COMMIT;
 /*
 
@@ -429,16 +623,17 @@ COMMIT;
 */
 
 DELETE FROM GRPCCARD;
-INSERT INTO GRPCCARD("ID","CODE","NAME","TEXT","AUTOREGCLIENT","AUTOREGCARD","CARDPREFIXBEG","CARDPREFIXEND","CARDLENBEG","CARDLENEND","ENTERMANUAL","ENTERREADER","ENTERVIS","ENTERSCAN","PRIORITY","USEFORUNREGCCARDS","DELETED") VALUES (2158686,1,'Карты ВТИ-ДИСКОНТ','карты используемые для сервиса ВТИ-ДИСКОНТ',1,0,NULL,NULL,NULL,NULL,1,1,0,1,0,1,0);
+INSERT INTO GRPCCARD("ID","CODE","NAME","TEXT","AUTOREGCLIENT","AUTOREGCARD","CARDPREFIXBEG","CARDPREFIXEND","CARDLENBEG","CARDLENEND","ENTERMANUAL","ENTERREADER","ENTERVIS","ENTERSCAN","PRIORITY","USEFORUNREGCCARDS","DELETED") VALUES (2159133,1,'ДИСКОНТНЫЕ КАРТЫ','ВТИ-ДИСКОНТ',0,0,NULL,NULL,NULL,NULL,1,1,0,1,1,1,0);
 COMMIT;
 /*
 
 */
 
 DELETE FROM CCARD;
+INSERT INTO CCARD("ID","CODE","GRPCCARDID","VAL","EXPDATEBEG","EXPDATEEND","STATE","DELETED","CHNGFM","ISFROMFM") VALUES (2159134,-1181832331,2159133,'000567',NULL,NULL,1,0,'3',0);
 COMMIT;
 /*
 
 */
 
-EXECUTE PROCEDURE SET_GID(2158751);
+EXECUTE PROCEDURE SET_GID(2159143);

@@ -1,47 +1,11 @@
 
-  <div class="tab-pane fade show active" id="discount" role="tabpanel" aria-labelledby="discount-tab">
-      <div class="">
-            <hr>
-          {{ alg_form }}
-
-          <hr>
-
-            <form  id="bonus-form" class="form-group">
-                        {{ form }}
-
-
-                <label id="discount-label" style="display: none;"> Правила начисления скидок: </label>
-                <div id="discount-rules">
-
-                </div>
-                </br>
-                <div id="discount-rules-controls" style="display: none;">
-                    <button type=button  class="btn btn-default" onclick="addRule('','');">+</button>
-                    <button  type=button class="btn btn-default" onclick="remRule();">-</button>
-                </div>
-
-
-
-
-                <p class="text-center">
-
-                 </br>
-                <button type="button" class="btn btn-lg" onclick="sendSettings('save');">Сохранить</button>
-             </p>
-
-
-            </form>
-
-
-        </div>
-   </div>
-  <div class="tab-pane fade" id="workplace" role="tabpanel" aria-labelledby="workplace-tab">
-      {% for cashbox in cashboxes %}
       <div class="">
            <br>
-            <p>Доступно касс: {{ licenses_count }}</p>
+            <p>Доступно касс для добавления: {{ licenses_count }}</p>
            <hr />
-           <p>Касса: "{{ cashbox.name }}"</p>
+
+      {% for cashbox in cashboxes %}
+          <p><strong>Касса: "{{ cashbox.name }}"</strong> <button class="btn btn-small btn-outline-danger" onClick="deleteWorkplace('{{cashbox.frontol_key}}');"><i class="fa fa-times" aria-hidden="true"></i></button></p>
           <p>Номер: {{ cashbox.serial_number }}</p>
           <p>Адрес: {{cashbox.address}}</p>
           <p>Статус: {% if cashbox.online %}
@@ -52,17 +16,34 @@
 
           </p>
             <p>Ключ доступа FRONTOL - {{cashbox.frontol_key}}</p>
-            <p><a href="/settings/frontol/?KEY={{cashbox.frontol_key }}"><i class="fa fa-download" aria-hidden="true"></i> Файл настроек FRONTOL</a></p>
+            <p><a href="/settings/frontol/?KEY={{cashbox.frontol_key }}"><i class="fa fa-download" aria-hidden="true" ></i> Файл настроек FRONTOL</a></p>
             <hr />
        </div>
       {% endfor %}
-  </div>
-  <div class="tab-pane fade" id="org" role="tabpanel" aria-labelledby="org-tab">
-      <div class="">
-          <br>
-         <h5> Организация - {{org_name}}</h5>
-         <p>Активность до: {{active}}</p>
-         <hr />
+<p>
+    <button class="btn btn-success btn-sm" id="addCashBoxButton" data-toggle="modal" data-target="#CashBoxModal"><i class="fa fa-money" aria-hidden="true"></i> Добавить </button>
+</p>
+
+<div class="modal fade" id="CashBoxModal">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Касса</h5>
+        <button type="button" class="close"  data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
       </div>
+      <div class="modal-body">
+          <form id="CashBoxForm" method="POST">
+                {{ form }}
+          </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" onclick="sendSettings('save', 'workplace');">Сохранить</button>
+        <button type="button" id="modal_close" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+      </div>
+    </div>
   </div>
+</div>
+
 

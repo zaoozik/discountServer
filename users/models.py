@@ -21,6 +21,10 @@ class UserCustom(models.Model):
     def load_cashboxes(self):
         self.cashboxes = CashBox.objects.filter(user_id__exact=self.pk)
 
+    def count_cashboxes(self):
+        self.cashboxes = CashBox.objects.filter(user_id__exact=self.pk)
+        return len(self.cashboxes)
+
     def get_cashboxes(self):
         return CashBox.objects.filter(user_id__exact=self.pk)
 
@@ -35,7 +39,7 @@ class CashBox(models.Model):
     user = models.ForeignKey(UserCustom, on_delete=models.CASCADE)
     frontol_key = models.CharField(max_length=64, verbose_name='Ключ Frontol', null=True)
     session_key = models.CharField(max_length=100, verbose_name='Сессия', null=True)
-    online = models.BooleanField(verbose_name='Касса онлайн')
+    online = models.BooleanField(verbose_name='Касса онлайн', default=False)
 
     class Meta:
         indexes = [

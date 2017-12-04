@@ -7,7 +7,8 @@ from django.contrib.auth.decorators import login_required
 from django.template import loader, RequestContext
 
 from core.forms import BonusForm, DiscountForm, ComboForm, AlgorithmForm
-from users.models import UserCustom
+from users.forms import CashBoxForm
+from users.models import UserCustom, CashBox
 from core.models import DiscountPlan
 
 
@@ -67,6 +68,8 @@ def settings(request):
         template = loader.get_template('settings.html')
         return HttpResponse(template.render(response, request))
 
+
+def settings_discount(request):
     if request.method == 'POST':
         if 'cmd' in request.POST:
             user = UserCustom.objects.get(user_id__exact=request.user.pk)
@@ -75,24 +78,20 @@ def settings(request):
             if request.POST['cmd'] == 'get':
                 initials = json.loads(d_plan.parameters)
                 if d_plan.algorithm == 'bonus':
-                    form = BonusForm()
+                    form = BonusForm(initial=initials)
                     alg_form = AlgorithmForm(initial={'algorithm': 'bonus'})
                 elif d_plan.algorithm == 'discount':
                     form = DiscountForm()
                     alg_form = AlgorithmForm(initial={'algorithm': 'discount'})
                     response = {'rules': initials['rules']}
                 elif d_plan.algorithm == 'combo':
-                    form = ComboForm()
+                    form = ComboForm(initial=initials)
                     alg_form = AlgorithmForm(initial={'algorithm': 'combo'})
                     response = {'rules': initials['rules']}
 
-                template = loader.get_template('settings_data.html')
+                template = loader.get_template('settings_discount.html')
                 html = template.render({'form': form,
-                                        'alg_form': alg_form,
-                                        'org_name': user.org.name,
-                                        'licenses_count': user.licenses_count,
-                                        'cashboxes': user.get_cashboxes(),
-                                        'active': user.active_to
+                                        'alg_form': alg_form
                                         }, request)
                 response.update({"html": html, "algorithm": d_plan.algorithm})
                 return HttpResponse(json.dumps(response), content_type="application/json")
@@ -110,13 +109,9 @@ def settings(request):
                         form = ComboForm()
                         form.data['assume_delta'] = d_plan.time_delay
                         alg_form = AlgorithmForm(initial={'algorithm': 'combo'})
-                    template = loader.get_template('settings_data.html')
+                    template = loader.get_template('settings_discount.html')
                     html = template.render({'form': form,
-                                            'alg_form': alg_form,
-                                            'org_name': user.org.name,
-                                            'licenses_count': user.licenses_count,
-                                            'cashboxes': user.get_cashboxes(),
-                                            'active': user.active_to
+                                            'alg_form': alg_form
                                             }, request)
                     response = {"html": html, "algorithm": d_plan.algorithm}
                     return HttpResponse(json.dumps(response), content_type="application/json")
@@ -187,6 +182,69 @@ def settings(request):
                                 return redirect('/settings/')
 
 
+
+def settings_workplace(request):
+    if request.method == 'POST':
+        if 'cmd' in request.POST:
+            user = UserCustom.objects.get(user_id__exact=request.user.pk)
+            d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
+            response = {}
+            if request.POST['cmd'] == 'get':
+                template = loader.get_template('settings_workplace.html')
+                html = template.render({'cashboxes': user.get_cashboxes,
+                                        'licenses_count': user.licenses_count - user.count_cashboxes(),
+                                        'form': CashBoxForm(),
+                                        }, request)
+                response.update({"html": html, "algorithm": d_plan.algorithm})
+                return HttpResponse(json.dumps(response), content_type="application/json")
+            if request.POST['cmd'] == 'save':
+                if (user.licenses_count - user.count_cashboxes()) == 0:
+                    response = {'result': 'error'}
+                    return HttpResponse(json.dumps(response))
+                if 'data' in request.POST:
+                    data = request.POST
+                    d_form = CashBoxForm(json.loads(data['data']))
+                    if d_form.is_valid():
+                        new_box = CashBox()
+                        new_box.init_frontol_key()
+                        new_box.user = user
+                        new_box.address = d_form.cleaned_data['address']
+                        new_box.serial_number = d_form.cleaned_data['serial_number']
+                        new_box.name = d_form.cleaned_data['name']
+                        new_box.save()
+                        response = {'result': 'ok'}
+                        return HttpResponse(json.dumps(response))
+                response = {'result': 'error'}
+                return HttpResponse(json.dumps(response))
+            if request.POST['cmd'] == 'delete':
+                if 'data' in request.POST:
+                    data = json.loads(request.POST['data'])
+                    if 'key' in data:
+                        try:
+                            cash = CashBox.objects.get(user_id__exact=user.pk, frontol_key__exact=data['key'])
+                            cash.delete()
+                            response = {'result': 'ok'}
+                            return HttpResponse(json.dumps(response))
+                        except Exception as e:
+                            pass
+                response = {'result': 'error'}
+                return HttpResponse(json.dumps(response))
+
+def settings_org(request):
+    if request.method == 'POST':
+        if 'cmd' in request.POST:
+            user = UserCustom.objects.get(user_id__exact=request.user.pk)
+            d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
+            response = {}
+            if request.POST['cmd'] == 'get':
+                template = loader.get_template('settings_org.html')
+                html = template.render({'org_name': user.org.name,
+                                        'active': user.active_to
+                                        }, request)
+                response.update({"html": html, "algorithm": d_plan.algorithm})
+                return HttpResponse(json.dumps(response), content_type="application/json")
+
+
 @login_required
 def settingsSave(request):
     if request.method == 'POST':
@@ -209,7 +267,7 @@ def settingsSave(request):
                         'zeroing_delta': form.cleaned_data['zeroing_delta'],
                     }
                     d_plan.time_delay = form.cleaned_data['assume_delta']
-                    d_plan.parameters=json.dumps(parameters)
+                    d_plan.parameters = json.dumps(parameters)
                     d_plan.org = user.org
                     d_plan.save()
                     response = {'form': form, 'org_name': 'СОХРАНЕНО'}
@@ -260,12 +318,13 @@ def settingsSave(request):
 
 @login_required
 def exportFrontolSettings(request):
-    if request.method=="GET":
-        cuser = UserCustom.objects.get(user_id__exact=request.user.pk)
-        with open('D:/projects/discountServer\discountServer/static/documents/vti_discount.xch', 'r', encoding='cp1251') as set_file:
-           buffer = set_file.read()
-        str = 'var ACCESS_KEY = "%s";' % cuser.frontol_access_key
-        buffer = buffer.replace('#ACCESS_KEY', str, 1)
-        response = HttpResponse(buffer.encode(encoding='cp1251'), content_type="text/csv")
-        response['Content-Disposition'] = 'attachment; filename="frontol_settings_%s.xch"' % cuser.user.username
-        return response
+    if request.method == "GET":
+        if 'KEY' in request.GET:
+            cuser = UserCustom.objects.get(user_id__exact=request.user.pk)
+            with open('D:/projects/discountServer\discountServer/static/documents/vti_discount.xch', 'r', encoding='cp1251') as set_file:
+               buffer = set_file.read()
+            str = 'var ACCESS_KEY = "%s";' % request.GET['KEY']
+            buffer = buffer.replace('#ACCESS_KEY', str, 1)
+            response = HttpResponse(buffer.encode(encoding='cp1251'), content_type="text/csv")
+            response['Content-Disposition'] = 'attachment; filename="frontol_settings_%s.xch"' % cuser.user.username
+            return response
