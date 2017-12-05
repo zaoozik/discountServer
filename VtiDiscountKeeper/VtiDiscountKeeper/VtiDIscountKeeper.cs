@@ -15,6 +15,7 @@ using System.Data.SQLite;
 using System.Data.Common;
 using System.Threading;
 using System.Timers;
+using System.Configuration;
 
 namespace VtiDiscountKeeper
 {
@@ -37,7 +38,23 @@ namespace VtiDiscountKeeper
         static void Listen()
         {
 
-            listener.Prefixes.Add("http://localhost:8888/");
+            var appSettings = System.Configuration.ConfigurationSettings.AppSettings;
+            string port = "8888";
+            try
+            {
+                if (appSettings["serviceListenPort"] != null)
+                {
+                    port = appSettings["serviceListenPort"];
+                }
+            }
+            catch
+            {
+                port = "8888";
+            }
+
+
+
+            listener.Prefixes.Add("http://localhost:"+port+"/");
             listener.Start();
             Task.Factory.StartNew(() =>
             {
@@ -136,7 +153,22 @@ namespace VtiDiscountKeeper
         {
             try
                 {
-                    SqlMaintenance.Connect(DB_NAME);
+                        var appSettings = System.Configuration.ConfigurationSettings.AppSettings;
+                        string server = "http://192.168.0.24/";
+                        try
+                        {
+                            if (appSettings["discountServerAddress"] != null)
+                            {
+                                server = appSettings["discountServerAddress"];
+                            }
+                        }
+                        catch
+                        {
+                           server = "http://192.168.0.24/";
+                        }
+
+
+                SqlMaintenance.Connect(DB_NAME);
                     string sql = "SELECT * FROM t_data";
                     var reader = SqlMaintenance.ExCommandResult(sql);
 
@@ -155,7 +187,8 @@ namespace VtiDiscountKeeper
                     var hcon = new StringContent(post_data);
                         hcon.Headers.Clear();
                         hcon.Headers.Add("Content-Type","application/x-www-form-urlencoded");
-                        var response =  client.PostAsync("http://192.168.0.202:80/api/cards/vti_keeper/", hcon).Result;
+
+                        var response =  client.PostAsync(server + "api/cards/vti_keeper/", hcon).Result;
                         HttpStatusCode status = response.StatusCode;
                         if (status == HttpStatusCode.OK)
                         {
@@ -183,12 +216,84 @@ namespace VtiDiscountKeeper
         }
 
 
+        public static void Test()
+        {
+
+            var appSettings = System.Configuration.ConfigurationSettings.AppSettings;
+            string server = "http://192.168.0.24/";
+            try
+            {
+                if (appSettings["discountServerAddress"] != null)
+                {
+                    server = appSettings["discountServerAddress"];
+                }
+            }
+            catch
+            {
+                server = "http://192.168.0.24/";
+            }
+
+
+            try
+            {
+                SqlMaintenance.Connect(DB_NAME);
+                string sql = "SELECT * FROM t_data";
+                var reader = SqlMaintenance.ExCommandResult(sql);
+                SqlMaintenance.Close();
+
+                var log = File.Open(LOG_FILE, FileMode.Append, FileAccess.Write);
+                byte[] log_rec = System.Text.Encoding.GetEncoding(1251).GetBytes(String.Format("[{0}] Тест БД пройден успешно! {1}", DateTime.Now, Environment.NewLine));
+                log.Write(log_rec, 0, log_rec.Length);
+                log.Close();
+
+            }
+            catch (Exception ex)
+            {
+                var log = File.Open(LOG_FILE, FileMode.Append, FileAccess.Write);
+                byte[] log_rec = System.Text.Encoding.GetEncoding(1251).GetBytes(String.Format("[{0}] Тест БД НЕ ПРОЙДЕН! {1}{2}", DateTime.Now, ex, Environment.NewLine));
+                log.Write(log_rec, 0, log_rec.Length);
+                log.Close();
+            }
+
+            try
+            { 
+                 var response = client.GetAsync(server).Result;
+                HttpStatusCode status = response.StatusCode;
+                if (status == HttpStatusCode.OK)
+                {
+
+                    var log = File.Open(LOG_FILE, FileMode.Append, FileAccess.Write);
+                    byte[] log_rec = System.Text.Encoding.GetEncoding(1251).GetBytes(String.Format("[{0}] Тест связи с дисконтным сервером успешно пройден! {1}", DateTime.Now, Environment.NewLine));
+                    log.Write(log_rec, 0, log_rec.Length);
+                    log.Close();
+                }
+                else
+                {
+                    var log = File.Open(LOG_FILE, FileMode.Append, FileAccess.Write);
+                    byte[] log_rec = System.Text.Encoding.GetEncoding(1251).GetBytes(String.Format("[{0}] Тест связи с дисконтным сервером НЕ ПРОЙДЕН! Не вернул 200. Статус - {1}{2}", DateTime.Now, status, Environment.NewLine));
+                    log.Write(log_rec, 0, log_rec.Length);
+                    log.Close();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                var log = File.Open(LOG_FILE, FileMode.Append, FileAccess.Write);
+                byte[] log_rec = System.Text.Encoding.GetEncoding(1251).GetBytes(String.Format("[{0}] Тест связи с дисконтным сервером не пройден! Ошибка - {1}{2}", DateTime.Now, ex, Environment.NewLine));
+                log.Write(log_rec, 0, log_rec.Length);
+                log.Close();
+            }
+
+        }
+
+
         protected override  void OnStart(string[] args)
         {
 
             var log = File.Open(LOG_FILE, FileMode.Create, FileAccess.Write);
             log.Close();
 
+            Test();
             Listen();
             var timer = new System.Timers.Timer(60000);
             timer.Elapsed += Post;

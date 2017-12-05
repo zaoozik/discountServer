@@ -2,6 +2,7 @@
 {% load discountServer_extras %}
 {% block 'content' %}
 <h3>История операций</h3>
+<hr>
 <div class="form-group row">
     <div class="col-3">
         <label for = "dateFrom">Начало периода</label>
@@ -49,7 +50,8 @@
     $( "#dateFrom" ).datepicker();
   } );
   </script>
-
+<hr>
+<br>
     <div class="form-group row pull-right">
             <small id="total"></small>
     </div>
@@ -77,6 +79,32 @@
         </tbody>
 
     </table>
+
+
+
+<div class="modal fade" id="CardModal">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Карта</h5>
+        <button type="button" class="close"  onclick="clearForm();" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+          <form id="CardForm" method="POST">
+                {{ card_form }}
+          </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="clearForm();" data-dismiss="modal">Закрыть</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
 
 <script src="/static/js/transactions.js"></script>
 {% endblock %}

@@ -4,6 +4,7 @@ from .models import Transaction
 from django.contrib.auth.decorators import login_required
 from users.models import UserCustom
 from cards.models import Card
+from cards.forms import CardForm
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.models import User
 from django.template import loader
@@ -14,7 +15,7 @@ from django.db.models import Q
 @login_required
 def listTrans(request):
     if request.method=="GET":
-        response = {}
+        response = {"card_form": CardForm()}
         template = loader.get_template('transactions.html')
         return HttpResponse(template.render(response, request))
 

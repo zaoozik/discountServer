@@ -2,48 +2,129 @@
 {% load discountServer_extras %}
 {% block 'main' %}
 
-    <div class="container" id ="topmenu" style="margin-bottom: 40px;">
-        <nav class="nav navbar-expand-lg">
-            <img height=50 width=346 class="navbar-brand" src="/static/images/logo.png">
-            <ul class="navbar-nav mr-auto">
-                <li class="nav-item">
-                    <a class="nav-link active" href="../">Главная</a>
-                  </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/cards/">Карты</a>
-                  </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/transactions/">История операций</a>
-                  </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/queue/">Задания</a>
-                  </li>
-                <li class="nav-item">
-                   <a class="nav-link" href="/settings/">Настройки</a>
-                  </li>
-                {% if request.user|has_group:"administrators" %}
-                <li class="nav-item">
-                   <a class="nav-link" href="/admin/">Администрирование</a>
-                  </li>
-                {% endif %}
-            </ul>
-            <form class="form-inline">
-                <a  class="nav-item" style="margin-right: 10px;">{{ user.username }}</a>
-                <a href = "../logout/">Выйти</a>
-            </form>
+    <!--<div class="container-fluid" id ="topmenu" style="background-color: white !important;">-->
+        <!--<nav class="navbar navbar-light bg-primary navbar-expand-lg">-->
+            <!--<img height=50 width=346 class="navbar-brand" src="/static/images/logo.png">-->
+            <!--<ul class="navbar-nav mr-auto">-->
+                <!--<li class="nav-item">-->
+                    <!--<a class="nav-link active" href="../">Главная</a>-->
+                  <!--</li>-->
+                <!--<li class="nav-item">-->
+                    <!--<a class="nav-link" href="/cards/">Карты</a>-->
+                  <!--</li>-->
+                <!--<li class="nav-item">-->
+                    <!--<a class="nav-link" href="/transactions/">История операций</a>-->
+                  <!--</li>-->
+                <!--<li class="nav-item">-->
+                    <!--<a class="nav-link" href="/queue/">Задания</a>-->
+                  <!--</li>-->
+                <!--<li class="nav-item">-->
+                   <!--<a class="nav-link" href="/settings/">Настройки</a>-->
+                  <!--</li>-->
+                <!--{% if request.user|has_group:"administrators" %}-->
+                <!--<li class="nav-item">-->
+                   <!--<a class="nav-link" href="/admin/">Администрирование</a>-->
+                  <!--</li>-->
+                <!--{% endif %}-->
+            <!--</ul>-->
+            <!--<form class="form-inline">-->
+                <!--<a  class="nav-item" style="margin-right: 10px;">{{ user.username }}</a>-->
+                <!--<a href = "../logout/">Выйти</a>-->
+            <!--</form>-->
 
-        </nav>
+        <!--</nav>-->
+    <!--</div>-->
+
+    <div class="nav-side-menu">
+    <div class="brand">
+        <img height=32 width=298 src="/static/images/logo.png">
     </div>
+    <div class="brand">
 
-    <div class="container" id="content">
+            <a  class="nav-item" style="margin-right: 10px;">{{ user.first_name }} {{ user.last_name }}</a>
+            <a href = "/logout/" class="logout">Выйти</a>
+
+    </div>
+    <i class="fa fa-bars fa-2x toggle-btn" data-toggle="collapse" data-target="#menu-content"></i>
+
+        <div class="menu-list">
+
+            <ul id="menu-content" class="menu-content collapse out">
+                <a href="../">
+                    <li>
+                      <i class="fa fa-lg fa-home" aria-hidden="true"></i> Главная
+                    </li>
+                </a>
+
+                <a href="/cards/">
+                    <li>
+                        <i class="fa fa-credit-card fa-lg" aria-hidden="true"></i> Карты
+                    </li>
+                </a>
+
+                <a href="/transactions/">
+                    <li>
+                        <i class="fa fa-history fa-lg" aria-hidden="true"></i> История операций
+                    </li>
+                </a>
+
+                <a href="/queue/">
+                    <li>
+                        <i class="fa fa-tasks fa-lg" aria-hidden="true"></i> Задания
+                    </li>
+                </a>
+
+                <a href="/settings/">
+                    <li>
+                        <i class="fa fa-cogs fa-lg" aria-hidden="true"></i> Настройки
+
+                    </li>
+                 </a>
+                {% if request.user|has_group:"administrators" %}
+                <a href="/admin/">
+                    <li>
+                        <i class="fa fa-dashboard fa-lg"></i> Администрирование
+                    </li>
+                </a>
+                {% endif %}
+
+
+            </ul>
+     </div>
+
+</div>
+
+
+    <div class="container-fluid custom" id="content">
 
         {% block 'content' %}
         <div class="jumbotron">
-            <h1>Скрипт для FRONTOL 5</h1>
-            <h1>Инструкция по настройке</h1>
-            <h1>Техподдержка</h1>
+            <h1 class="display-3">Дисконтная система "ВТИ-ДИСКОНТ"</h1>
+            <br>
+            <h3 class="display-5">Быстрый старт:</h3>
+            <ul>
+                <li class="lead">
+                    <a style=" text-decoration: none; color: #444;" href="/cards/">Заведите карты</a>
+                </li>
+                <li class="lead">
+                    <a style=" text-decoration: none; color: #444;" href="/settings/">Настройте режим работы дисконтной системы</a>
+                </li>
+                <li class="lead">
+                    <a style=" text-decoration: none; color: #444;" href="/settings/">Добавьте кассы</a>
+                </li>
+                <li class="lead">
+                    <a style=" text-decoration: none; color: #444;" href="/settings/">Настройте рабочие места с помощью файла настроек</a>
+                </li>
+                <li class="lead">
+                    <a style=" text-decoration: none; color: #444;" href="/settings/">Установите службу VtiDiscountKeeper для бесперебойной работы</a>
+                </li>
+                <li class="lead">
+                    <a style=" text-decoration: none; color: #444;" href="/transactions/">Контроллируйте продажи</a>
+                </li>
+            </ul>
         </div>
         {% endblock %}
          </div>
+
 
 {% endblock %}

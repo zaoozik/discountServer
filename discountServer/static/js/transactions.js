@@ -1,6 +1,6 @@
     var buffer= '';
     var start = 0;
-    var count = 10;
+    var count = 50;
     var total =3;
     var elems_end = false;
     var selection_parameters ={
@@ -73,7 +73,7 @@ $(document).ready(function(){
 function dataUpdate(){
     var cmd = "update";
     start= 0;
-    count= 10;
+    count= 50;
     var data = {
             "start": start,
             "count": count,
@@ -117,7 +117,7 @@ function dataUpdate(){
                    var html = $('#tbody').append("<tr></tr>");
                      $(html).append("<td>"+emptyIfNull(value["date"])+"</td>");
                      $(html).append("<td>"+emptyIfNull(value["type"])+"</td>");
-                      $(html).append("<td>"+emptyIfNull(value["card"])+"</td>");
+                       $(html).append("<td><a href='#' onclick='showCard("+ '"'+value["card"]+'"'+");'>"+ emptyIfNull(value["card"])+"</a></td>");
                        $(html).append("<td>"+emptyIfNull(value["sum"])+"</td>");
                         $(html).append("<td>"+emptyIfNull(value["bonus_before"])+"</td>");
                          $(html).append("<td>"+emptyIfNull(value["bonus_add"])+"</td>");
@@ -193,7 +193,7 @@ if (elems_end)
                    var html = $('#tbody').append("<tr></tr>");
                      $(html).append("<td>"+emptyIfNull(value["date"])+"</td>");
                      $(html).append("<td>"+emptyIfNull(value["type"])+"</td>");
-                      $(html).append("<td>"+emptyIfNull(value["card"])+"</td>");
+                      $(html).append("<td><a href='#' onclick='showCard("+ '"'+value["card"]+'"'+");'>"+ emptyIfNull(value["card"])+"</a></td>");
                        $(html).append("<td>"+emptyIfNull(value["sum"])+"</td>");
                         $(html).append("<td>"+emptyIfNull(value["bonus_before"])+"</td>");
                          $(html).append("<td>"+emptyIfNull(value["bonus_add"])+"</td>");
@@ -236,7 +236,7 @@ function clearFilter(){
         "type": "",
     };
     start = 0;
-    count = 10;
+    count = 50;
     $('#dateFrom').val("");
     $('#dateTo').val("");
     $('#type').val("");
@@ -248,6 +248,49 @@ function clearFilter(){
     $('#workplace').val("");
     dataUpdate();
 }
+
+
+function showCard(card_code)
+{
+    var card_data = {"code": card_code}
+    var cmd = "get";
+    var cData;
+    $('#CardModal').modal('show');
+
+    $.ajax({
+        url: '/cards/maintenance/',
+        type: "POST",
+        data: {
+          "cmd": cmd,
+          "data": JSON.stringify(card_data)
+        },
+        dataType: "json",
+        success: function (response) {
+          if (response.result) {
+            if (response.result == "ok"){
+                cData = response.data;
+                $('#id_code').val(cData.code);
+                 $('#id_holder_name').val(cData.holder_name);
+                  $('#id_holder_phone').val(cData.holder_phone);
+                  $('#id_accumulation').val(cData.accumulation);
+                   $('#id_bonus').val(cData.bonus);
+                    $('#id_discount').val(cData.discount);
+                     $('#id_type').val(cData.type);
+                      $('#id_reg_date').val(cData.reg_date);
+                       $('#id_changes_date').val(cData.changes_date);
+                        $('#id_last_transaction_date').val(cData.last_transaction_date);
+
+            }
+            else
+            {
+               alert(data.msg);
+            }
+         }
+        }
+      });
+}
+
+
 
 $(window).scroll(function()
 {
