@@ -211,6 +211,7 @@ def settings_workplace(request):
                         new_box.address = d_form.cleaned_data['address']
                         new_box.serial_number = d_form.cleaned_data['serial_number']
                         new_box.name = d_form.cleaned_data['name']
+                        new_box.frontol_version = d_form.cleaned_data['frontol_version']
                         new_box.save()
                         response = {'result': 'ok'}
                         return HttpResponse(json.dumps(response))
@@ -323,8 +324,10 @@ def exportFrontolSettings(request):
             cuser = UserCustom.objects.get(user_id__exact=request.user.pk)
             with open('D:/projects/discountServer\discountServer/static/documents/vti_discount.xch', 'r', encoding='cp1251') as set_file:
                buffer = set_file.read()
-            str = 'var ACCESS_KEY = "%s";' % request.GET['KEY']
-            buffer = buffer.replace('#ACCESS_KEY', str, 1)
+            ass_key = 'var ACCESS_KEY = "%s";' % request.GET['KEY']
+            fron_vers = CashBox.get_by_key(request.GET['KEY'])
+            buffer = buffer.replace('#ACCESS_KEY', ass_key, 1)
+            buffer = buffer.replace('#FRONTOL_VERSION', fron_vers.frontol_version, 1)
             response = HttpResponse(buffer.encode(encoding='cp1251'), content_type="text/csv")
             response['Content-Disposition'] = 'attachment; filename="frontol_settings_%s.xch"' % cuser.user.username
             return response

@@ -38,6 +38,7 @@ class CashBox(models.Model):
     address = models.CharField(max_length=100, verbose_name='Адрес кассы')
     user = models.ForeignKey(UserCustom, on_delete=models.CASCADE)
     frontol_key = models.CharField(max_length=64, verbose_name='Ключ Frontol', null=True)
+    frontol_version = models.CharField(max_length=15, verbose_name='Версия Frontol', null=True)
     session_key = models.CharField(max_length=100, verbose_name='Сессия', null=True)
     online = models.BooleanField(verbose_name='Касса онлайн', default=False)
 

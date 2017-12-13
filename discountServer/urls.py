@@ -15,6 +15,8 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from django.contrib import admin
+from django.views.generic import RedirectView
+
 from discountServer import views
 from transactions import views as t_views
 from queues import views as q_views
@@ -33,5 +35,7 @@ urlpatterns = [
     url(r'^settings/frontol/$', views.exportFrontolSettings, name='exportFrontolSettings'),
     url(r'^cards/', include('cards.urls')),
     url(r'^api/', include('api.urls')),
+    url(r'^favicon.ico$', RedirectView.as_view(url='/static/images/favicon.ico'), name='favicon'),
     url(r'^', views.index),
+
 ]
