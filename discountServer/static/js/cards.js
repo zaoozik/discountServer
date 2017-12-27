@@ -5,8 +5,10 @@
     var elems_end = false;
     var selection_parameters ={
         "sort": "code",
+        "order": "-",
         "search": "",
         "deleted": "n",
+        "type": ""
     };
 
     // Устанавливаем строку поиска
@@ -17,6 +19,11 @@
      // Устанавливаем порядок сортировки
     $('#sort').change(function(){
         selection_parameters["sort"] = $(this).val();
+    });
+
+    //Устанавливаем отбор по типу карт
+    $('#type').change(function(){
+        selection_parameters["type"] = $(this).val();
     });
 
     //Включая/выключая удаленных
@@ -274,6 +281,7 @@ function dataUpdate(){
                          '<td><input class="cardcode" type="checkbox" id="' + value["code"] + '"></td> \
                          <td>' + value["code"] + '</td> \
                          <td>' + value["type"] + '</td> \
+                         <td>' + value["accumulation"] + '</td> \
                          <td>' + value["holder_name"] + '</td> \
                          <td><button data-toggle="modal" data-target="#CardModal" type="button" onclick="getCard(';
                          html += "'" + value["code"] + "'";
@@ -345,6 +353,7 @@ function dataAdd(){
                          '<td><input class="cardcode" type="checkbox" id="' + value["code"] + '"></td> \
                          <td>' + value["code"] + '</td> \
                          <td>' + value["type"] + '</td> \
+                         <td>' + value["accumulation"] + '</td> \
                          <td>' + value["holder_name"] + '</td> \
                          <td><button data-toggle="modal" data-target="#CardModal" type="button" onclick="getCard(';
                          html += "'" + value["code"] + "'";
@@ -372,13 +381,30 @@ function dataAdd(){
 function clearFilter(){
     selection_parameters ={
         "sort": "code",
+        "order": "-",
         "search": "",
         "deleted": "n",
+        "type": ""
     };
+    $('#type').val("");
     $('#showDeleted').prop('checked', false);
     start = 0;
     count = 50;
     dataUpdate();
+}
+
+function setSortOrder(order){
+    if (order == ""){
+    selection_parameters["order"] = order;
+    $('#order-asc').addClass('active');
+    $('#order-desc').removeClass('active');
+    }
+    if (order == "-"){
+    selection_parameters["order"] = order;
+    $('#order-desc').addClass('active');
+    $('#order-asc').removeClass('active');
+    }
+
 }
 
 $('#tbody').scroll(function()

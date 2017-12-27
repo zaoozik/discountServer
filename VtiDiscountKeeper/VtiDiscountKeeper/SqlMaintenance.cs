@@ -36,12 +36,14 @@ namespace VtiDiscountKeeper
         {
 
             conn.Close();
+            System.Data.SQLite.SQLiteConnection.ClearAllPools();
             CONNECTED = false;
 
         }
 
         static public void ExCommand(string command_text)
         {
+
             SQLiteCommand command = new SQLiteCommand(conn);
             command.CommandText = command_text;
             command.CommandType = CommandType.Text;

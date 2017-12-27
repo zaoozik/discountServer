@@ -48,20 +48,27 @@ def listCards(request):
                 if selection_parameters is not None:
                     if selection_parameters["deleted"] == "n" or selection_parameters["deleted"] == "":
                         q &= Q(deleted__exact='n')
+                    if selection_parameters["type"] != "":
+                        q &= Q(type__exact=selection_parameters["type"])
                     if is_digit(selection_parameters["search"]):
                         q &= Q(code__startswith=selection_parameters["search"])
                     elif selection_parameters["search"] != '':
                         q &= Q(holder_name__contains=selection_parameters["search"])
+                    if "order" in selection_parameters:
+                        order = selection_parameters["order"]
+                    else:
+                        order = '-'
                 total = Card.objects.filter(q).count()
                 if data["count"] > total:
                     data["count"] = total
-                cards = Card.objects.filter(q).order_by(selection_parameters["sort"]).all()[data["start"]:data["start"]+data["count"]]
+                cards = Card.objects.filter(q).order_by(order+selection_parameters["sort"]).all()[data["start"]:data["start"]+data["count"]]
                 resp_cards = []
                 for card in cards:
                     resp_cards.append(
                         {
                             "code": card.code,
                             'holder_name': card.holder_name,
+                            'accumulation': card.accumulation,
                             'type': card.get_type(),
                             'deleted': card.deleted,
                         }
@@ -86,7 +93,10 @@ def maintenance(request):
                         form = CardForm(data)
                         if form.is_valid():
                             try:
-                                card = Card.objects.get(code__exact=form.cleaned_data['code'])
+                                #if "collision" in post:
+                                    #if post['collision']
+                                card = Card.objects.get(code__exact=form.cleaned_data['code'], org_id__exact=user.org.pk)
+
                             except ObjectDoesNotExist as e:
                                 card = Card()
                             card.code = form.cleaned_data['code']
@@ -100,7 +110,7 @@ def maintenance(request):
                             if not card.reg_date:
                                 card.reg_date = datetime.now().date()
                                 card.last_transaction_date = datetime.now().date()
-                            card.org=user.org
+                            card.org = user.org
                             card.save()
                             response = {"result": "ok"}
                             return HttpResponse(json.dumps(response), content_type="application/json")

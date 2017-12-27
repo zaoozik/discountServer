@@ -68,7 +68,7 @@ def count(value, card,  d_plan, transaction):
             rules[float(a)] = rules.pop(a)
     else:
         return None
-
+    rules[0] = 0
     rules = DiscountParameters().load(rules)
     next_discount = None
     if value >= 0:

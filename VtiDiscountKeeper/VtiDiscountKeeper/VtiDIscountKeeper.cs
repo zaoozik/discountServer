@@ -91,11 +91,9 @@ namespace VtiDiscountKeeper
                 System.IO.StreamReader reader = new System.IO.StreamReader(body, Encoding.UTF8);
 
 
-                string rec = reader.ReadToEnd();
-
+                string rec = reader.ReadToEnd(); 
                 try
                 {
-
 
                     string curr_path = Directory.GetCurrentDirectory();
                     SqlMaintenance.Connect(DB_NAME);
@@ -111,6 +109,7 @@ namespace VtiDiscountKeeper
                 }
                 catch (Exception ex)
                 {
+                    SqlMaintenance.Close();
                     var log = File.Open(LOG_FILE, FileMode.Append, FileAccess.Write);
                     byte[] log_rec = System.Text.Encoding.GetEncoding(1251).GetBytes(String.Format("[{0}] ОШИБКА В ПОЛУЧЕНИИ {1}{2}", DateTime.Now, ex, Environment.NewLine));
                     log.Write(log_rec, 0, log_rec.Length);
@@ -154,7 +153,7 @@ namespace VtiDiscountKeeper
             try
                 {
                         var appSettings = System.Configuration.ConfigurationSettings.AppSettings;
-                        string server = "http://192.168.0.24/";
+                        string server = "http://77.243.11.250:1024/";
                         try
                         {
                             if (appSettings["discountServerAddress"] != null)
@@ -164,7 +163,7 @@ namespace VtiDiscountKeeper
                         }
                         catch
                         {
-                           server = "http://192.168.0.24/";
+                           server = "http://77.243.11.250:1024/";
                         }
 
 
@@ -174,17 +173,27 @@ namespace VtiDiscountKeeper
 
                     string post_data;
                     string date;
+                List<Dictionary<String, String>> data_ar = new  List<Dictionary<String, String>>();
 
-                    foreach (DbDataRecord record in reader)
+                foreach (DbDataRecord record in reader)
                     {
+                        Dictionary<String, String> rec = new Dictionary<String, String>();
                         post_data = record["post_data"].ToString();
                         date = record["datetime"].ToString();
                         post_data += "&datetime=" + date;
                         post_data += "&vtikeeper=token";
+                    rec.Add("post", post_data);
+                    rec.Add("id", record["id"].ToString());
+                    data_ar.Add(rec);
+                    }
 
-                        
+                    reader.Close();
+                    SqlMaintenance.Close();
 
-                    var hcon = new StringContent(post_data);
+                foreach (var record in data_ar)
+                    {        
+
+                    var hcon = new StringContent(record["post"]);
                         hcon.Headers.Clear();
                         hcon.Headers.Add("Content-Type","application/x-www-form-urlencoded");
 
@@ -195,18 +204,20 @@ namespace VtiDiscountKeeper
                             SqlMaintenance.Connect(DB_NAME);
                             sql = "DELETE FROM t_data WHERE id=" + record["id"];
                             SqlMaintenance.ExCommand(sql);
+                            SqlMaintenance.Close();
 
-                            var log = File.Open(LOG_FILE, FileMode.Append, FileAccess.Write);
-                            byte[] log_rec = System.Text.Encoding.GetEncoding(1251).GetBytes(String.Format("[{0}] Отправка на сервер {1}{2}", DateTime.Now, post_data, Environment.NewLine));
+                        var log = File.Open(LOG_FILE, FileMode.Append, FileAccess.Write);
+                            byte[] log_rec = System.Text.Encoding.GetEncoding(1251).GetBytes(String.Format("[{0}] Отправка на сервер {1}{2}", DateTime.Now, record["post"], Environment.NewLine));
                             log.Write(log_rec, 0, log_rec.Length);
                             log.Close();
                         }
 
                     }
-                    SqlMaintenance.Close();
+                    
                 }
                 catch (Exception ex)
                 {
+                    SqlMaintenance.Close();
                     var log = File.Open(LOG_FILE, FileMode.Append, FileAccess.Write);
                     byte[] log_rec = System.Text.Encoding.GetEncoding(1251).GetBytes(String.Format("[{0}] ОШИБКА В ОТПРАВКЕ {1}{2}", DateTime.Now, ex, Environment.NewLine));
                     log.Write(log_rec, 0, log_rec.Length);
@@ -239,6 +250,7 @@ namespace VtiDiscountKeeper
                 SqlMaintenance.Connect(DB_NAME);
                 string sql = "SELECT * FROM t_data";
                 var reader = SqlMaintenance.ExCommandResult(sql);
+                reader.Close();
                 SqlMaintenance.Close();
 
                 var log = File.Open(LOG_FILE, FileMode.Append, FileAccess.Write);
@@ -249,6 +261,7 @@ namespace VtiDiscountKeeper
             }
             catch (Exception ex)
             {
+                SqlMaintenance.Close();
                 var log = File.Open(LOG_FILE, FileMode.Append, FileAccess.Write);
                 byte[] log_rec = System.Text.Encoding.GetEncoding(1251).GetBytes(String.Format("[{0}] Тест БД НЕ ПРОЙДЕН! {1}{2}", DateTime.Now, ex, Environment.NewLine));
                 log.Write(log_rec, 0, log_rec.Length);

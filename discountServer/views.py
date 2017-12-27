@@ -10,6 +10,7 @@ from core.forms import BonusForm, DiscountForm, ComboForm, AlgorithmForm
 from users.forms import CashBoxForm
 from users.models import UserCustom, CashBox
 from core.models import DiscountPlan
+from queues.models import Task
 
 
 
@@ -73,10 +74,16 @@ def settings_discount(request):
     if request.method == 'POST':
         if 'cmd' in request.POST:
             user = UserCustom.objects.get(user_id__exact=request.user.pk)
-            d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
+            try:
+                d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
+            except:
+                d_plan = DiscountPlan()
             response = {}
             if request.POST['cmd'] == 'get':
-                initials = json.loads(d_plan.parameters)
+                try:
+                    initials = json.loads(d_plan.parameters)
+                except:
+                    initials = {}
                 if d_plan.algorithm == 'bonus':
                     form = BonusForm(initial=initials)
                     alg_form = AlgorithmForm(initial={'algorithm': 'bonus'})
@@ -88,6 +95,9 @@ def settings_discount(request):
                     form = ComboForm(initial=initials)
                     alg_form = AlgorithmForm(initial={'algorithm': 'combo'})
                     response = {'rules': initials['rules']}
+                elif d_plan.algorithm == '':
+                    form = BonusForm()
+                    alg_form = AlgorithmForm(initial={'algorithm': 'bonus'})
 
                 template = loader.get_template('settings_discount.html')
                 html = template.render({'form': form,
@@ -139,6 +149,11 @@ def settings_discount(request):
                                 d_plan.parameters = json.dumps(parameters)
                                 d_plan.org = user.org
                                 d_plan.save()
+
+                                # удаляем текущие задания
+                                for task in Task.objects.filter(org_id__exact=user.org.pk):
+                                    task.delete()
+
                                 return redirect('/settings/')
                         elif algorithm == 'discount':
                             form = DiscountForm(data)
@@ -155,6 +170,11 @@ def settings_discount(request):
                                 d_plan.parameters = json.dumps(parameters)
                                 d_plan.org = user.org
                                 d_plan.save()
+
+                                # удаляем текущие задания
+                                for task in Task.objects.filter(org_id__exact=user.org.pk):
+                                    task.delete()
+
                                 return redirect('/settings/')
 
                         elif algorithm == 'combo':
@@ -178,6 +198,10 @@ def settings_discount(request):
                                 d_plan.org = user.org
                                 d_plan.save()
 
+                                # удаляем текущие задания
+                                for task in Task.objects.filter(org_id__exact=user.org.pk):
+                                    task.delete()
+
                                 response = {"result": "ok"}
                                 return redirect('/settings/')
 
@@ -187,7 +211,10 @@ def settings_workplace(request):
     if request.method == 'POST':
         if 'cmd' in request.POST:
             user = UserCustom.objects.get(user_id__exact=request.user.pk)
-            d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
+            try:
+                d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
+            except:
+                d_plan = DiscountPlan()
             response = {}
             if request.POST['cmd'] == 'get':
                 template = loader.get_template('settings_workplace.html')
@@ -235,7 +262,10 @@ def settings_org(request):
     if request.method == 'POST':
         if 'cmd' in request.POST:
             user = UserCustom.objects.get(user_id__exact=request.user.pk)
-            d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
+            try:
+                d_plan = DiscountPlan.objects.get(org_id__exact=user.org.pk)
+            except:
+                d_plan = DiscountPlan()
             response = {}
             if request.POST['cmd'] == 'get':
                 template = loader.get_template('settings_org.html')
@@ -271,9 +301,13 @@ def settingsSave(request):
                     d_plan.parameters = json.dumps(parameters)
                     d_plan.org = user.org
                     d_plan.save()
+                    # удаляем текущие задания
+                    for task in Task.objects.get(org_id__exact=user.org.pk):
+                        task.delete()
                     response = {'form': form, 'org_name': 'СОХРАНЕНО'}
                     template = loader.get_template('settings.html')
                     return redirect('/settings/')
+
             elif request.POST['algorithm'] == 'discount':
                 form = DiscountForm(request.POST)
                 if form.is_valid():
@@ -289,6 +323,10 @@ def settingsSave(request):
                     d_plan.parameters=json.dumps(parameters)
                     d_plan.org = user.org
                     d_plan.save()
+
+                    # удаляем текущие задания
+                    for task in Task.objects.get(org_id__exact=user.org.pk):
+                        task.delete()
                     response = {'form': form, 'org_name': 'СОХРАНЕНО'}
                     template = loader.get_template('settings.html')
                     return redirect('/settings/')
@@ -309,7 +347,7 @@ def settingsSave(request):
                         'zeroing_delta': form.cleaned_data['zeroing_delta'],
                     }
                     d_plan.time_delay = form.cleaned_data['assume_delta']
-                    d_plan.parameters=json.dumps(parameters)
+                    d_plan.parameters = json.dumps(parameters)
                     d_plan.org = user.org
                     d_plan.save()
                     response = {'form': form, 'org_name': 'СОХРАНЕНО'}

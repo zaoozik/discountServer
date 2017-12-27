@@ -24,7 +24,7 @@
 
         </div>
         <div class="col-2">
-            <button class="btn btn-primary" onclick="dataUpdate();"><i class="fa fa-filter" aria-hidden="true"></i> Фильтр</button>
+            <button class="btn btn-primary btn-sm" onclick="dataUpdate();"><i class="fa fa-filter" aria-hidden="true"></i> Применить</button>
         </div>
     </div>
     <div class="form-group row">
@@ -32,18 +32,40 @@
         <button class="btn btn-success btn-sm"  id="massAddCardButton" data-toggle="modal" data-target="#MassCardModal"><i class="fa fa-users" aria-hidden="true"></i> Массовое добавление</button>
         </div>
         <div class="col-5">
+            <div class="d-inline-block">
                 <small>Сортировать по</small>
-                <select id="sort"class="form-control form-control-sm">
+                <select id="sort"class="form-control form-control-sm d-inline-block">
                     <option value="code">КОД</option>
                     <option value="holder_name">ФИО</option>
+                    <option value="accumulation"> Накопления</option>
+                </select>
+           </div>
+            <div class="d-inline-block">
+                <button id="order-desc" class="btn btn-outline-primary btn-sm active" onclick="setSortOrder('-');"><i class="fa fa-sort-amount-desc" aria-hidden="true"></i></button>
+            </div>
+            <div class="d-inline-block">
+                <button id="order-asc" class="btn btn-outline-primary btn-sm " onclick="setSortOrder('');"><i class="fa fa-sort-amount-asc" aria-hidden="true"></i></button>
+            </div>
+        </br>
+
+
+                <small>Тип карты</small>
+
+            <select id="type" class="form-control form-control-sm">
+                    <option value="">Все</option>
+                    <option value="bonus">Бонусная</option>
+                    <option value="discount">Дисконтная</option>
+                    <option value="combo">Комбо</option>
 
                 </select>
+
+
                      <label class="form-check-label form-control-sm">
                  <input class="form-check-input form-control-sm" type="checkbox" id="showDeleted"> Показать удаленные
             </label>
         </div>
         <div class="col-2">
-             <button class="btn btn-primary" onclick="clearFilter();"><i class="fa fa-repeat" aria-hidden="true"></i> Сбросить</button>
+             <button class="btn btn-primary btn-sm" onclick="clearFilter();"><i class="fa fa-repeat" aria-hidden="true"></i> Сбросить</button>
         </div>
 
     </div>
@@ -88,7 +110,7 @@ thead {
 
 
 tbody td, thead th {
-    width: 30%;
+    width: 22.5%;
     float: left;
 }
 
@@ -110,6 +132,7 @@ tbody td:first-child, thead th:first-child {
             <th></th>
             <th>КОД</th>
             <th>ТИП</th>
+            <th>НАКОПЛЕНИЯ</th>
             <th>ФИО</th>
             <th></th>
         </tr>

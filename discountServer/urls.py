@@ -20,6 +20,7 @@ from django.views.generic import RedirectView
 from discountServer import views
 from transactions import views as t_views
 from queues import views as q_views
+from service import views as s_views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
@@ -29,6 +30,7 @@ urlpatterns = [
     url(r'^settings/discount/$', views.settings_discount, name='settings_discount'),
     url(r'^settings/workplace/$', views.settings_workplace, name='settings_workplace'),
     url(r'^settings/org/$', views.settings_org, name='settings_org'),
+    url(r'^service/$', s_views.list_service, name='list_service'),
     url(r'^transactions/$', t_views.listTrans, name='listTrans'),
     url(r'^queue/$', q_views.listQueue, name='listQueue'),
     url(r'^settings/save/$', views.settingsSave, name='settingsSave'),

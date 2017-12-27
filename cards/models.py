@@ -11,10 +11,12 @@ class Card (models.Model):
 
     code = models.CharField(max_length=20, verbose_name='Код карты')
     accumulation = models.FloatField(default=0, verbose_name='Накопления')
-    bonus = models.FloatField(default=0, verbose_name='Бонусы')
+    bonus_to_delete = models.FloatField(default=0, verbose_name='Бонусы')
     discount = models.FloatField(default=0, verbose_name='Процентная скидка')
     holder_name = models.CharField(max_length=100, default='', verbose_name='ФИО владельца')
     holder_phone = models.CharField(max_length=20, default='', verbose_name='Телефон')
+    sex = models.CharField(max_length=1, default='m', verbose_name='Пол')
+    fav_date = models.DateField(verbose_name='Знаменательная дата', null=True)
     org = models.ForeignKey(org_models.Org, on_delete=models.CASCADE, verbose_name='Организация')
     deleted = models.CharField(max_length=1, default='n', verbose_name='Признак удаления (y/n)')
     type = models.CharField(max_length=17, default='bonus', choices=type_choices, verbose_name='Тип карты')
@@ -53,9 +55,52 @@ class Card (models.Model):
         if self.type == 'combo':
             return 'Комбинированная'
 
+    def get_bonus(self):
+        bonuses = Bonus.objects.filter(card_id__exact=self.pk)
+        result = 0
+        for bonus in bonuses:
+            result += bonus.value
+        return result
+
     def __str__(self):
         return self.org.name + "_" + self.code
 
     class Meta:
         unique_together = (("code", "org"),)
+
+
+class Bonus (models.Model):
+    card = models.ForeignKey(Card, on_delete=models.CASCADE)
+    value = models.FloatField(default=0)
+    active_from = models.DateTimeField(null=True)
+    active_to = models.DateTimeField(null=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

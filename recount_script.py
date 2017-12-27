@@ -16,24 +16,18 @@ if __name__ == "__main__":
 
     from queues.models import Task
     from cards.models import Card
+    from core.models import DiscountPlan
     from transactions.models import Transaction
     from datetime import datetime
 
-    tasks = Task.objects.all()
-    for task in tasks:
-        try:
-            test = Card.objects.get(id__exact=task.card.pk)
-        except:
-            task.delete()
-            continue
+    cards = Card.objects.filter(org_id__exact=3)
+    d_plan = DiscountPlan.objects.get(org_id__exact=3)
+    for card in cards:
+        print(card.code)
 
-        if test.deleted == 'y':
-            task.delete()
-            continue
-
-        if task.execution_date <= datetime.now():
-            _handler = __import__('core.lib.%s' % task.operation, globals(), locals(),
+        _handler = __import__('core.lib.%s' % d_plan.algorithm, globals(), locals(),
                                                      ['count'], 0)
-            card = _handler.count(task.data, task.card, task.d_plan, task.transaction)
-            card.save()
-            task.delete()
+        card = _handler.count(0, card, d_plan, Transaction())
+        card.save()
+        print('New discount = %s.' % card.discount)
+
