@@ -1,0 +1,64 @@
+{% extends 'main.html' %}
+{% block 'content' %}
+
+<style>
+    .scroll-data{
+        overflow: hidden;
+        overflow-y: scroll;
+    };
+</style>
+
+<h3>Карты</h3>
+
+<div id="cardsList"></div>
+
+<style>
+    table {
+        width: 100%;
+    }
+
+thead, tbody, tr, td, th { display: block; }
+
+tr:after {
+    content: ' ';
+    display: block;
+    visibility: hidden;
+    clear: both;
+}
+
+thead th {
+    height: 40px;
+
+    /*text-align: left;*/
+}
+
+tbody {
+    height: 300px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+thead {
+    /* fallback */
+}
+
+
+tbody td, thead th {
+    width: 22.5%;
+    float: left;
+}
+
+tbody td:last-child, thead th:last-child {
+    width: 5%;
+    float: left;
+}
+
+tbody td:first-child, thead th:first-child {
+    width: 5%;
+    float: left;
+}
+</style>
+
+
+{% endblock %}
+

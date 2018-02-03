@@ -1,0 +1,54 @@
+
+.scroll-table {
+        width: 100%;
+    }
+
+.scroll-table thead,
+ .scroll-table tbody,
+ .scroll-table tr,
+  .scroll-table td,
+   .scroll-table th {
+    display: block;
+}
+
+.scroll-table tr:after {
+    content: ' ';
+    display: block;
+    visibility: hidden;
+    clear: both;
+}
+
+.scroll-table thead th {
+    height: 40px;
+
+    /*text-align: left;*/
+}
+
+.scroll-table tbody {
+    height: 300px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+.scroll-table thead {
+    /* fallback */
+}
+
+
+.scroll-table tbody td,
+ .scroll-table thead th {
+    width: 22.5%;
+    float: left;
+}
+
+.scroll-table tbody td:last-child,
+ .scroll-table thead th:last-child {
+    width: 5%;
+    float: left;
+}
+
+.scroll-table tbody td:first-child,
+ .scroll-table thead th:first-child {
+    width: 5%;
+    float: left;
+}
