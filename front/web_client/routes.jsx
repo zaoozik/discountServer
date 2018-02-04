@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import {CardsList} from './Cards.jsx';
 import {CardInfo} from './Cards.jsx';
 import {Settings} from './Settings.jsx'
+import {Transactions} from "./Transactions.jsx";
 import SideMenu from "./SideMenu.jsx";
 
 export const Home = () =>(
@@ -52,6 +53,7 @@ export const Main =() =>(
                 <Route path='/card/:code' component={CardInfo}/>
                 <Route exact path={'/cards'} component={CardsList} />
                 <Route exact path={'/settings'} component={Settings} />
+                <Route exact path={'/transactions'} component={Transactions} />
 
 
             </Switch>

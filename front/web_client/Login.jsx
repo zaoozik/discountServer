@@ -1,15 +1,8 @@
 import React from 'react';
 import {render} from 'react-dom';
 import {login} from './auth';
-import { connect } from 'react-redux'
-import store from './store';
-import {Route, Redirect} from 'react-router';
 
-export const getAuthToken = () => {
-    let state = store.getState();
-    return state.token;
 
-}
 
 
 

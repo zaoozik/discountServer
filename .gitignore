@@ -3,3 +3,6 @@
 venv/
 *.lock
 *.sql
+*.iml
+*.iml
+*.iml

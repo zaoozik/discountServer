@@ -14,6 +14,7 @@ import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = "D:\\projects\\discountServer\\back\\discountServer\\"
+#BASE_DIR = "D:\\var\\discountServer\\back\\discountServer\\"
 
 
 # Quick-start development settings - unsuitable for production

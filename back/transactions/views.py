@@ -91,6 +91,23 @@ def listTrans(request):
 
 # REST API VIEWS
 @csrf_exempt
+def rest_transactions_list(request):
+    response = {}
+    if request.method == 'GET':
+        user = UserCustom.objects.get(user_id__exact=request.user.pk)
+
+        trans = Transaction.objects.filter(org_id__exact=user.org.pk)[:100]
+
+        serializer_context = {
+            'request': Request(request),
+        }
+
+        serializer = TransactionSerializer(trans, many=True, context=serializer_context)
+
+        return JsonResponse(serializer.data, safe=False)
+
+
+@csrf_exempt
 def rest_trans_by_card(request, card_code):
     response = {}
     if request.method == 'GET':

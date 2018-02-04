@@ -4,19 +4,78 @@ import {Alert} from './Tools.jsx';
 import ReactDOM from 'react-dom';
 
 
-class DiscountRules extends React.Component{
-    constructor(props) {
+class Workplaces extends React.Component{
+    constructor(props){
         super(props);
         this.state = {
-            rules: {}
-
+            workplaces: []
         }
     }
 
+    async loadWorkPlaces(){
+        let data = await fetch("/settings/api/workplaces",
+            {
+                method: 'get',
+                credentials: 'include',
+            } ).then(response =>response.json())
+        this.setState(
+            {
+                workplaces: data
+            }
+        )
+
+    }
+
+    componentDidMount(){
+        this.loadWorkPlaces();
+    }
+
     render(){
+        let online = (
+            <span style={{"color": "green"}}>онлайн</span>
+        );
+        let offline = (
+            <span style={{"color": "red"}}>оффлайн</span>
+        );
+        let workplaces = this.state.workplaces.map(function (item, index) {
+            return (
+                <div key={"workplace_"+index}>
+                    <p><strong>Касса: "{ item.name }"</strong>
+                        <button className="btn btn-small btn-outline-danger" >
+                            <i className="fa fa-times" aria-hidden="true"></i>
+                        </button>
+                    </p>
+                    <p>Адрес: {item.address}</p>
+                    <p>Статус: { item.online ? online: offline}</p>
+                    <p>Версия Frontol - { item.frontol_version }</p>
+                    <p>Ключ доступа FRONTOL - {item.frontol_key}</p>
+                    <p><a href={"/settings/frontol/?KEY=" + item.frontol_key }>
+                        <i className="fa fa-download" aria-hidden="true" > </i>
+                        Файл настроек FRONTOL
+                    </a>
+                </p>
+                    <hr />
+                </div>
 
-}}
+            )
 
+        })
+        return(
+            <div>
+                <br />
+                <p>Доступно касс для добавления {"3"}</p>
+                <hr />
+                {workplaces}
+
+                <p>
+                    <button className="btn btn-success btn-sm" id="addCashBoxButton" data-toggle="modal" data-target="#CashBoxModal"><i class="fa fa-money" aria-hidden="true"></i> Добавить </button>
+                </p>
+
+            </div>
+        )
+
+    }
+}
 
 export class Settings extends React.Component {
     constructor(props) {
@@ -43,12 +102,20 @@ export class Settings extends React.Component {
                 credentials: 'include',
             } ).then(response =>response.json())
 
-        console.log(data.parameters);
+        let rules;
+        try{
+            rules = data.rules;
+        }
+        catch (err) {
+            rules = []
+        }
+        console.log(rules);
 
         this.setState({
             id: data.id,
             algorithm: data.algorithm,
-            parameters: JSON.parse(data.parameters),
+            rules: rules,
+            parameters: data.parameters ? JSON.parse(data.parameters): {},
             time_delay: data.time_delay
 
         })
@@ -59,17 +126,36 @@ export class Settings extends React.Component {
         this.setState(
             {
                 algorithm: e.target.value,
-                parameters: {}
+                parameters: {},
+                rules: []
             }
         )
-        if (e.target.value != 'bonus'){
-            this.setState(
-                {
-                    parameters: {rules: []},
-                }
-            )
-        }
     }
+
+
+    onRuleChangeDiscount = (e) =>{
+        let rules = this.state.rules;
+        rules[e.target.name][0] = e.target.value;
+        this.setState(
+            {
+                rules: rules,
+            }
+        )
+
+    }
+
+
+    onRuleChangeAccum = (e) =>{
+        let rules = this.state.rules;
+        rules[e.target.name][1] = e.target.value;
+        this.setState(
+            {
+                rules: rules,
+            }
+        )
+
+    }
+
 
 
     onInputChange = (e) =>{
@@ -87,11 +173,21 @@ export class Settings extends React.Component {
     }
 
     addDiscountRule =(dis, val) =>{
-        console.log('hello');
+        //console.log('hello');
+        let rules = this.state.rules;
+        rules.push([null, null]);
         this.setState({
-            rules: this.state.rules.concat({"": null})
+            rules: rules
         });
-        console.log({rule});
+    }
+
+    remDiscountRule =() =>{
+        console.log('hello');
+        let rules = this.state.rules;
+        rules.pop();
+        this.setState({
+            rules: rules
+        });
     }
 
 
@@ -119,8 +215,6 @@ export class Settings extends React.Component {
 
 
     }
-
-
 
 
     render() {
@@ -210,23 +304,34 @@ export class Settings extends React.Component {
 
         let discount_data=null;
 
-        if (this.state.parameters.rules) {
-
+        if (this.state.rules.length >0 ) {
+            console.log('rules started');
+            let obj = this;
             discount_data = this.state.rules.map(function (item, index) {
+                console.log(obj.state.rules[index]);
                 return (
-                        <div className="form-row rule">
+                        <div key={"discount_rule_"+index} className="form-row rule">
                             <div className={'col-1'}>
                                 <label>{index+1 + "."}</label>
                             </div>
                             <div className="col-3 ">
 
-                                <input type="number" min="0" value={item[0]} className="form-control form-control-sm discount"
-                                       placeholder="Процент скидки"/>
+                                <input type="number"
+                                       name={index}
+                                       onChange={obj.onRuleChangeDiscount}
+                                       min="0" value={obj.state.rules[index][0]} className="form-control form-control-sm discount"
+                                       placeholder="Процент скидки"
+                                />
                             </div>
                             <div className="col-3 ">
 
-                                <input type="number" min="0" value={item[1]} className="form-control form-control-sm accum"
-                                       placeholder="Необходимые накопления"/>
+                                <input type="number"
+                                       name={index}
+                                       onChange={obj.onRuleChangeAccum}
+                                       min="0" value={obj.state.rules[index][1]} className="form-control form-control-sm accum"
+                                       placeholder="Необходимые накопления"
+
+                                />
                             </div>
                         </div>
 
@@ -257,7 +362,7 @@ export class Settings extends React.Component {
 
                 <div id="discount-rules-controls" className={'bottom-buttons'}>
                     <button type="button" className="btn btn-default" onClick={obj.addDiscountRule} >+</button>
-                    <button type="button" className="btn btn-default" >-</button>
+                    <button type="button" className="btn btn-default" onClick={obj.remDiscountRule} >-</button>
                 </div>
                 </div>
             )
@@ -331,6 +436,7 @@ export class Settings extends React.Component {
 
                     <div className="tab-pane fade" id="workplace" role="tabpanel" aria-labelledby="workplace-tab">
                         {/* WORKPLACE SETTINGS START */}
+                            <Workplaces/>
                         {/* WORKPLACE SETTINGS ENDS */}
                     </div>
 

@@ -48,7 +48,7 @@ class CashBox(models.Model):
     name = models.CharField(max_length=100, verbose_name='Имя кассы')
     serial_number = models.CharField(max_length=20, verbose_name='Заводской номер кассы')
     address = models.CharField(max_length=100, verbose_name='Адрес кассы')
-    user = models.ForeignKey(UserCustom, on_delete=models.CASCADE)
+    org = models.ForeignKey(Org, null=True, on_delete=models.CASCADE)
     frontol_key = models.CharField(max_length=64, verbose_name='Ключ Frontol', null=True)
     frontol_version = models.CharField(max_length=15, verbose_name='Версия Frontol', null=True)
     session_key = models.CharField(max_length=100, verbose_name='Сессия', null=True)

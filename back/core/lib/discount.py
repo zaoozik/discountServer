@@ -13,7 +13,7 @@ class DiscountParameters:
         self.body = []
 
     def load(self, params):
-        if type(params) == dict:
+        if type(params) == list:
             self.body = sorted(params.items(), key=lambda item: float(item[0]))
             self.len = len(self.body)
             if self.len > 0:
@@ -53,22 +53,22 @@ class DiscountParameters:
 
 
 def count(value, card,  d_plan, transaction):
+    # try:
+    #     parameters = json.loads(d_plan.parameters)
+    # except:
+    #     return None
+    # if type(parameters) is not dict:
+    #     return None
+
     try:
-        parameters = json.loads(d_plan.parameters)
+        rules = json.loads(d_plan.rules)
     except:
         return None
-    if type(parameters) is not dict:
+    if type(rules) is not list:
         return None
 
     value = float(value)
 
-    if 'rules' in parameters:
-        rules = parameters['rules']
-        for a in rules.keys():
-            rules[float(a)] = rules.pop(a)
-    else:
-        return None
-    rules[0] = 0
     rules = DiscountParameters().load(rules)
     next_discount = None
     if value >= 0:
