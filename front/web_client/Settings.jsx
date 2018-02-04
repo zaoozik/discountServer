@@ -4,6 +4,100 @@ import {Alert} from './Tools.jsx';
 import ReactDOM from 'react-dom';
 
 
+class WorkplaceModal extends React.Component{
+    constructor(props){
+        super(props);
+            this.state = {
+                address:
+                    " ",
+
+                frontol_version:
+                    " ",
+
+                name:
+                    " ",
+
+                serial_number:
+                     " "
+
+            }
+        }
+
+    saveWorkplace(){
+
+    }
+
+    onInputChange = (e) =>{
+        let parameter = e.target.name;
+        let temp = this.state;
+        temp[parameter] = e.target.value;
+
+        this.setState(
+            {
+                ... temp
+            }
+        )
+
+    }
+
+    render(){
+        console.log(this.state);
+        let obj = this;
+        return(
+            <div className="modal fade" id="CashBoxModal">
+                <div className="modal-dialog" role="document">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h5 className="modal-title">Касса</h5>
+                            <button type="button" class="close"  data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div key="CashBoxForm" >
+                                    <label >Наименование*:</label>
+                                        <input type="text"
+                                               name="name"
+                                               onChange={obj.onInputChange}
+                                               value={obj.state.name}
+                                               required=""
+                                               className="form-control
+                                                form-control-sm"
+                                        />
+                                    <label >Номер кассы*:</label>
+                                        <input type="number"
+                                               name="serial_number"
+                                               onChange={obj.onInputChange}
+                                               value={obj.state.serial_number}
+                                               min="0"
+                                               className="form-control form-control-sm"
+                                               required="" />
+                                    <label >Адрес кассы*:</label>
+                                            <input type="text"
+                                                   name="address"
+                                                   onChange={obj.onInputChange}
+                                                   value={obj.state.address}
+                                                   className="form-control form-control-sm" />
+                                    <label>Версия Frontol*:</label>
+                                                <input type="text"
+                                                       name="frontol_version"
+                                                       onChange={obj.onInputChange}
+                                                       value={obj.state.frontol_version}
+                                                       required=""
+                                                       className="form-control form-control-sm" />
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button type="button" className="btn btn-primary">Сохранить</button>
+                            <button type="button" id="modal_close" className="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+}
+
 class Workplaces extends React.Component{
     constructor(props){
         super(props);
@@ -70,6 +164,8 @@ class Workplaces extends React.Component{
                 <p>
                     <button className="btn btn-success btn-sm" id="addCashBoxButton" data-toggle="modal" data-target="#CashBoxModal"><i class="fa fa-money" aria-hidden="true"></i> Добавить </button>
                 </p>
+
+                <WorkplaceModal/>
 
             </div>
         )
