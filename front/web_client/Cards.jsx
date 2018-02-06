@@ -34,7 +34,7 @@ export class CardInfo extends React.Component {
             holder_name:
                 "",
             holder_phone:
-                "",
+                "+7",
             id:
                 "",
             last_transaction_date:
@@ -138,12 +138,14 @@ export class CardInfo extends React.Component {
         let form_control_class = "form-control form-control-sm";
 
         let bonuses = this.state.bonuses.map(function (item, index,){
+            let active_from = new Date(item.active_from);
+            let active_to = new Date(item.active_to);
 
             return (
                     <tr key={'bonus_id_'+item.id}>
                         <td>{item.value}</td>
-                        <td>{item.active_from}</td>
-                        <td>{item.active_to}</td>
+                        <td>{active_from.toLocaleDateString()}</td>
+                        <td>{active_to.toLocaleDateString()}</td>
                     </tr>
 
             )
@@ -239,6 +241,15 @@ export class CardInfo extends React.Component {
                                 disabled={true}
                                 onChange={this.onInputChange}
                             />
+                            <label>
+                                Тип
+                            </label>
+                            <select name={"type"} onChange={this.onInputChange} value={this.state.type} className={form_control_class}>
+                                <option value={"bonus"}>Бонусная</option>
+                                <option value={"discount"}>Дисконтная</option>
+                                <option value={"combo"}>Комбинированная</option>
+
+                            </select>
                             <label >
                                 ФИО владельца
                             </label>
@@ -251,12 +262,10 @@ export class CardInfo extends React.Component {
                             <label >
                             Пол
                             </label>
-                            <input type={"text"}
-                            className={form_control_class}
-                            name={"sex"}
-                            value={this.state.sex}
-                                   onChange={this.onInputChange}
-                            />
+                            <select name={"sex"} onChange={this.onInputChange} value={this.state.sex} className={form_control_class}>
+                                <option value={"m"}>Мужчина</option>
+                                <option value={"f"}>Женщина</option>
+                            </select>
                             <label >
                             Телефон
                             </label>
@@ -265,6 +274,7 @@ export class CardInfo extends React.Component {
                             name={"holder_phone"}
                             value={this.state.holder_phone}
                                    onChange={this.onInputChange}
+                                   defaultValue={"+7"}
                             />
                             <label >
                             Дата регистрации
@@ -496,7 +506,16 @@ export class CardsList extends React.Component{
         let temp = this.state.cardsList;
         var obj=this;
         let cards = temp.map(function (item, index,){
-
+                let type;
+                if (item.type == 'bonus'){
+                    type="Бонусная";
+                }
+            if (item.type == 'discount'){
+                type="Дисконтная";
+            }
+            if (item.type == 'combo'){
+                type="Комбинированная";
+            }
             return (
 
                 <tr key={'id_'+item.code}>
@@ -505,7 +524,7 @@ export class CardsList extends React.Component{
                                id={item.code} />
                     </td>
                     <td>{item.code}</td>
-                    <td>{item.type}</td>
+                    <td>{type}</td>
                     <td>{item.accumulation}</td>
                     <td>{item.holder_name}</td>
                     <td>

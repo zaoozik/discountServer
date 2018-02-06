@@ -361,7 +361,7 @@ def exportFrontolSettings(request):
     if request.method == "GET":
         if 'KEY' in request.GET:
             cuser = UserCustom.objects.get(user_id__exact=request.user.pk)
-            with open('D:/projects/discountServer\discountServer/static/documents/vti_discount.xch', 'r', encoding='cp1251') as set_file:
+            with open('D:/projects/discountServer/back/discountServer/static/documents/vti_discount.xch', 'r', encoding='cp1251') as set_file:
                buffer = set_file.read()
             ass_key = 'var ACCESS_KEY = "%s";' % request.GET['KEY']
             fron_vers = CashBox.get_by_key(request.GET['KEY'])

@@ -14,7 +14,9 @@ class DiscountParameters:
 
     def load(self, params):
         if type(params) == list:
-            self.body = sorted(params.items(), key=lambda item: float(item[0]))
+            params.append([0, 0])
+            params = [[float(item[0]), float(item[1])] for item in params]
+            self.body = sorted(params, key=lambda item: float(item[0]))
             self.len = len(self.body)
             if self.len > 0:
                 self.current = 0
@@ -68,6 +70,7 @@ def count(value, card,  d_plan, transaction):
         return None
 
     value = float(value)
+
 
     rules = DiscountParameters().load(rules)
     next_discount = None

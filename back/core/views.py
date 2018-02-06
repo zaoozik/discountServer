@@ -64,7 +64,7 @@ def rest_get_cashboxes(request):
     response = {}
     if request.method == 'GET':
         user = UserCustom.objects.get(user_id__exact=request.user.pk)
-        cashboxes = CashBox.objects.filter(org_id__exact=user.org.pk)
+        cashboxes = CashBox.objects.filter(user_id__exact=user.pk)
 
         serializer_context = {
             'request': Request(request),
@@ -78,7 +78,7 @@ def rest_get_cashboxes(request):
         user = UserCustom.objects.get(user_id__exact=request.user.pk)
         new_box_data = json.loads(request.body.decode())
         box = CashBox(**new_box_data)
-        box.org = user.org
+        box.user = user
         box.init_frontol_key()
 
         # serializer_context = {

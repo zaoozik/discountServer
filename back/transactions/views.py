@@ -96,7 +96,7 @@ def rest_transactions_list(request):
     if request.method == 'GET':
         user = UserCustom.objects.get(user_id__exact=request.user.pk)
 
-        trans = Transaction.objects.filter(org_id__exact=user.org.pk)[:100]
+        trans = Transaction.objects.filter(org_id__exact=user.org.pk).order_by('-date')[:100]
 
         serializer_context = {
             'request': Request(request),

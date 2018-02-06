@@ -110,7 +110,7 @@ def apiGetCard(request, card_code, salt):
 
                         if card.is_bonus():
                             if not d_plan.is_discount():
-                                return HttpResponse(('%s#%s#%s') % (card.bonus, 0, card.accumulation), status='200')
+                                return HttpResponse(('%s#%s#%s') % (card.get_total_bonus(), 0, card.accumulation), status='200')
                             else:
                                 return HttpResponse(('%s#%s#%s') % (0, 0, card.accumulation), status='200')
                         if card.is_discount():
@@ -120,9 +120,9 @@ def apiGetCard(request, card_code, salt):
                                 return HttpResponse(('%s#%s#%s') % (0, 0, card.accumulation), status='200')
                         if card.is_combo():
                             if d_plan.is_combo():
-                                return HttpResponse(('%s#%s#%s') % (card.bonus, card.discount, card.accumulation), status='200')
+                                return HttpResponse(('%s#%s#%s') % (card.get_total_bonus(), card.discount, card.accumulation), status='200')
                             elif d_plan.is_bonus():
-                                return HttpResponse(('%s#%s#%s') % (card.bonus, 0, card.accumulation), status='200')
+                                return HttpResponse(('%s#%s#%s') % (card.get_total_bonus(), 0, card.accumulation), status='200')
                             elif d_plan.is_discount():
                                 return HttpResponse(('%s#%s#%s') % (0, card.discount, card.accumulation), status='200')
                     except ObjectDoesNotExist as e:
@@ -157,7 +157,7 @@ def apiAddAccumToCard(request, card_code, salt):
                             trans.date = datetime.now()
                             card = Card.objects.get(code=card_code, org=cuser.org.pk)
 
-                            trans.bonus_before = card.bonus
+                            trans.bonus_before = card.get_total_bonus()
                             trans.org = cuser.org
                             trans.card = card
                             trans.sum = float(data['value'])

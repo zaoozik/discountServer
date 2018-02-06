@@ -15,7 +15,7 @@ class Card (models.Model):
     bonus_to_delete = models.FloatField(default=0, verbose_name='Бонусы')
     discount = models.FloatField(default=0, verbose_name='Процентная скидка')
     holder_name = models.CharField(max_length=100, default='', verbose_name='ФИО владельца')
-    holder_phone = models.CharField(max_length=20, default='', verbose_name='Телефон')
+    holder_phone = models.CharField(max_length=20, null=True, default='+7', verbose_name='Телефон')
     sex = models.CharField(max_length=1, default='m', verbose_name='Пол')
     fav_date = models.DateField(verbose_name='Знаменательная дата', null=True)
     org = models.ForeignKey(org_models.Org, on_delete=models.CASCADE, verbose_name='Организация')
@@ -70,6 +70,7 @@ class Card (models.Model):
         bonuses = []
         bonus_dict = {}
         for bonus in Bonus.objects.filter(card_id__exact=self.pk):
+            bonus_dict = {}
             bonus_dict['id'] = bonus.pk
             bonus_dict['value'] = bonus.value
             bonus_dict['active_from'] = bonus.active_from
