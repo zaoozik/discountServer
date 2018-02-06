@@ -3,27 +3,90 @@ import { Link } from 'react-router-dom';
 import {Alert} from './Tools.jsx';
 import ReactDOM from 'react-dom';
 
+class Org extends React.Component{
+    constructor(props){
+        super(props);
+        this.state={
+            org: {}
+        }
+    }
+
+    async loadOrg(){
+        let data = await fetch("/settings/api/org",
+            {
+                method: 'get',
+                credentials: 'include',
+            } ).then(response =>response.json())
+        this.setState(
+            {
+                org: data
+            }
+        )
+
+    }
+
+    componentDidMount(){
+        this.loadOrg();
+
+    }
+
+
+    render(){
+
+        return(
+
+            <div class="">
+                <br />
+                    <h5> Организация - {this.state.org.name}</h5>
+                    <p>Активность до: {this.state.org.active_to}</p>
+                    <hr />
+                        <p><a href="/static/documents/vdk_service_install.exe">
+                            <i className="fa fa-download" aria-hidden="true"></i> Установщик службы VtiDiscountKeeper</a></p>
+                        <hr />
+            </div>
+            )
+    }
+}
+
 
 class WorkplaceModal extends React.Component{
     constructor(props){
         super(props);
-            this.state = {
-                address:
-                    " ",
+        this.state = {
+            address:
+                "",
 
-                frontol_version:
-                    " ",
+            frontol_version:
+                "",
 
-                name:
-                    " ",
+            name:
+                "",
 
-                serial_number:
-                     " "
+            serial_number:
+                ""
 
-            }
         }
 
-    saveWorkplace(){
+        this.saveWorkplace = this.saveWorkplace.bind(this);
+    }
+
+    async saveWorkplace(){
+        console.log("saving");
+        let data = await fetch("/settings/api/workplaces/",
+            {
+                method: 'PUT',
+                body: JSON.stringify(this.state),
+                credentials: 'include',
+            } ).then(response =>response.json())
+
+        if (data.status=='success'){
+            $('#modal_close').click();
+            this.props.update();
+            ReactDOM.render(<Alert isError={false} message={data.message}/>, document.getElementById('alert'));
+        }
+        if (data.status=='error'){
+            ReactDOM.render(<Alert isError={true} message={data.message}/>, document.getElementById('alert'));
+        }
 
     }
 
@@ -41,7 +104,6 @@ class WorkplaceModal extends React.Component{
     }
 
     render(){
-        console.log(this.state);
         let obj = this;
         return(
             <div className="modal fade" id="CashBoxModal">
@@ -88,7 +150,7 @@ class WorkplaceModal extends React.Component{
                             </div>
                         </div>
                         <div className="modal-footer">
-                            <button type="button" className="btn btn-primary">Сохранить</button>
+                            <button type="button" className="btn btn-primary" onClick={this.saveWorkplace}>Сохранить</button>
                             <button type="button" id="modal_close" className="btn btn-secondary" data-dismiss="modal">Отмена</button>
                         </div>
                     </div>
@@ -104,6 +166,8 @@ class Workplaces extends React.Component{
         this.state = {
             workplaces: []
         }
+
+        this.deleteWorkPlace = this.deleteWorkPlace.bind(this);
     }
 
     async loadWorkPlaces(){
@@ -120,6 +184,27 @@ class Workplaces extends React.Component{
 
     }
 
+    async deleteWorkPlace(e){
+        console.log(e.target.value);
+        let data = await fetch("/settings/api/workplaces",
+            {
+                method: 'delete',
+                credentials: 'include',
+                body: e.target.value
+            } ).then(response =>response.json())
+
+        if (data.status=='success'){
+            this.loadWorkPlaces();
+            ReactDOM.render(<Alert isError={false} message={data.message}/>, document.getElementById('alert'));
+        }
+        if (data.status=='error'){
+            ReactDOM.render(<Alert isError={true} message={data.message}/>, document.getElementById('alert'));
+        }
+
+
+
+    }
+
     componentDidMount(){
         this.loadWorkPlaces();
     }
@@ -131,11 +216,12 @@ class Workplaces extends React.Component{
         let offline = (
             <span style={{"color": "red"}}>оффлайн</span>
         );
+        let obj = this;
         let workplaces = this.state.workplaces.map(function (item, index) {
             return (
                 <div key={"workplace_"+index}>
-                    <p><strong>Касса: "{ item.name }"</strong>
-                        <button className="btn btn-small btn-outline-danger" >
+                    <p><strong>Касса: "{ item.name +"  "}" </strong>
+                        <button value={item.id} onClick={obj.deleteWorkPlace} className="btn btn-small btn-outline-danger" >
                             <i className="fa fa-times" aria-hidden="true"></i>
                         </button>
                     </p>
@@ -165,7 +251,7 @@ class Workplaces extends React.Component{
                     <button className="btn btn-success btn-sm" id="addCashBoxButton" data-toggle="modal" data-target="#CashBoxModal"><i class="fa fa-money" aria-hidden="true"></i> Добавить </button>
                 </p>
 
-                <WorkplaceModal/>
+                <WorkplaceModal update={this.loadWorkPlaces.bind(this)}/>
 
             </div>
         )
@@ -224,6 +310,18 @@ export class Settings extends React.Component {
                 algorithm: e.target.value,
                 parameters: {},
                 rules: []
+            }
+        )
+    }
+
+    onBonusMechChange = (e) =>{
+        console.log('changing mechanism');
+        console.log(e.target.value);
+        let params = this.state.parameters;
+        params['bonus_mechanism'] = e.target.value;
+        this.setState(
+            {
+                parameters: params
             }
         )
     }
@@ -320,6 +418,9 @@ export class Settings extends React.Component {
         let alg_discount = false;
         let alg_bonus = false;
         let alg_combo = false;
+        let bonus_cost_meh;
+        let bonus_percent_meh;
+
 
 
         if (this.state.algorithm == "bonus"){
@@ -332,9 +433,55 @@ export class Settings extends React.Component {
             alg_combo = true;
         }
 
-        let bonus_parameters = () =>{
+        if (this.state.parameters.bonus_mechanism == 'bonus_cost'){
+            bonus_cost_meh = true;
+            bonus_percent_meh = false;
+            //console.log('bonus_cost');
+        }
+
+        else if (this.state.parameters.bonus_mechanism == 'bonus_percent'){
+            bonus_percent_meh = true;
+            bonus_cost_meh = false;
+            //console.log('bonus_percent');
+        }
+        else{
+            bonus_percent_meh = true;
+            bonus_cost_meh = false;
+        }
+
+        let bonus_parameters = (obj) =>{
+
+            let bonus_percent = () =>{
+                return(
+                    <div>
+                        <label>Сколько процентов от суммы покупки зачисляются в виде бонусов:</label>
+                        <input type ="number"
+                               onChange={this.onInputChange}
+                               value={this.state.parameters.bonus_percent}
+                               className={css_form_control_sm}
+                               name={"bonus_percent"}/>
+                    </div>
+                )
+            };
+
+
+            let bonus_cost = () => {
+                return(
+                    <div>
+                    <label>Стоимость 1 бонуса:</label>
+                    <input
+                    type = "number"
+                    onChange = {this.onInputChange}
+                    value = {this.state.parameters.bonus_cost}
+                    className = {css_form_control_sm}
+                    name = {"bonus_cost"} />
+                    </div>)
+            }
+
             return(
                 <div>
+                    <h5>Правила начисления бонусов:</h5>
+                    < hr />
                     <label>Минимальная сумма покупки для зачисления бонусов:</label>
                     <input
                         type = "number"
@@ -351,32 +498,34 @@ export class Settings extends React.Component {
                            className={css_form_control_sm}
                            name={"max_bonus_percentage"}/>
 
-                    <h6>Начисление бонусов</h6>
-                    <div className={" form-inline"}>
-                        <input defaultChecked={true} type={"radio"} className={""} name={'bonus_accum_type'} />
-                        <label className="form-check-label" >Процент от суммы покупки</label>
-                    </div>
-                    <div className={" form-inline"}>
-                        <input type={"radio"} className={""} name={'bonus_accum_type'} />
-                        <label className="form-check-label" >Комбинированный</label>
+                    < br/>
+                    <h6>Механизм начисления бонусов:</h6>
+                    <div className="form-group ">
+                        <div className={" form-inline"}>
+                            <input checked={bonus_percent_meh} onChange={this.onBonusMechChange} type={"radio"}  value={'bonus_percent'} name={'bonus_mech'} id={'bonus_percent'} />
+                            <label className="form-check-label" >Процент от суммы покупки</label>
+                        </div>
+                        <div className={" form-inline"}>
+                            <input checked={bonus_cost_meh} type={"radio"} onChange={this.onBonusMechChange} value={'bonus_cost'}  name={'bonus_mech'} id={'bonus_cost'}/>
+                            <label className="form-check-label" >Стоимость бонуса</label>
+                        </div>
                     </div>
 
-                    <label>Стоимость 1 бонуса:</label>
-                    <input type ="number"
-                           onChange={this.onInputChange}
-                           value={this.state.parameters.bonus_cost}
-                           className={css_form_control_sm}
-                           name={"bonus_cost"}/>
+                    {(bonus_percent_meh)? bonus_percent(): null}
+                    {(bonus_cost_meh)? bonus_cost(): null}
 
-                    <label>Сколько процентов от суммы покупки зачисляются в виде бонусов:</label>
-                    <input type ="number"
-                           onChange={this.onInputChange}
-                           value={this.state.parameters.bonus_percent}
-                           className={css_form_control_sm}
-                           name={"bonus_percent"}/>
+
 
                     <label>Режим округления:</label>
-                    <select className={css_form_control_sm}>
+                    <select name="round" id="id_round" onChange={this.onInputChange} className="form-control ">
+                        <option value="math">Математическое округление</option>
+
+                        <option value="up">В большую сторону</option>
+
+                        <option value="down">В меньшую сторону</option>
+
+                        <option value="None">Без округления</option>
+
                     </select>
 
                     <label>Задержка перед начислением бонуса, часы:</label>
@@ -440,6 +589,8 @@ export class Settings extends React.Component {
             let obj = this;
             return(
                 <div>
+                    <h5>Правила начисления скидок:</h5>
+                    < hr />
                     <div className="form-row rule">
 
                             <div className={"col-1"}>
@@ -455,6 +606,8 @@ export class Settings extends React.Component {
                     <div  id={'discount-rules'}>
                             {discount_data}
                     </div>
+
+                    <br />
 
                 <div id="discount-rules-controls" className={'bottom-buttons'}>
                     <button type="button" className="btn btn-default" onClick={obj.addDiscountRule} >+</button>
@@ -512,8 +665,8 @@ export class Settings extends React.Component {
 
                         </div>
                                 <hr />
-                            <h5>Параметры режима</h5>
-                            {(alg_bonus || alg_combo)? bonus_parameters(): null}
+
+                            {(alg_bonus || alg_combo)? bonus_parameters(this): null}
                             {(alg_discount || alg_combo)? discount_parameters(): null}
 
 
@@ -538,6 +691,7 @@ export class Settings extends React.Component {
 
                     <div className="tab-pane fade" id="org" role="tabpanel" aria-labelledby="org-tab">
                         {/* ORG SETTINGS START */}
+                        <Org />
                         {/* ORG SETTINGS END */}
                     </div>
 

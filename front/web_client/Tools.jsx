@@ -1,6 +1,11 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 
 export class Alert extends React.Component{
+
+    closeThis(){
+        ReactDOM.unmountComponentAtNode(document.getElementById('alert'));
+    }
 
    render(){
        console.log(alertCss, header);
@@ -18,6 +23,7 @@ export class Alert extends React.Component{
                <h4 className="alert-heading">{header}</h4>
                <p>{this.props.message}</p>
                <hr />
+               <button onClick={this.closeThis}><i className="fa fa-times"></i></button>
            </div>
        )
    }

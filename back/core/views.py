@@ -74,4 +74,60 @@ def rest_get_cashboxes(request):
         response = serializer.data
         return JsonResponse(response, safe=False)
 
+    if request.method == 'PUT':
+        user = UserCustom.objects.get(user_id__exact=request.user.pk)
+        new_box_data = json.loads(request.body.decode())
+        box = CashBox(**new_box_data)
+        box.org = user.org
+        box.init_frontol_key()
 
+        # serializer_context = {
+        #     'request': Request(request),
+        # }
+        # serializer = CashBoxesSerializer(box, data=new_box_data)
+        # if serializer.is_valid():
+        #     serializer.save()
+        #     response['status'] = 'success'
+        #     response['message'] = 'Касса с кодом %s успешно сохранена!'
+        #     return JsonResponse(response, safe=False)
+
+        try:
+            box.save()
+            response['status'] = 'success'
+            response['message'] = 'Касса успешно сохранена!'
+            return JsonResponse(response, safe=False)
+        except Exception as e:
+            response['status'] = 'error'
+            response['message'] = str(e)
+            return JsonResponse(response, status=400)
+
+    if request.method == 'DELETE':
+        user = UserCustom.objects.get(user_id__exact=request.user.pk)
+        box_id = request.body.decode()
+
+        try:
+            box = CashBox.objects.get(pk=int(box_id))
+        except Exception as e:
+            response['status'] = 'error'
+            response['message'] = str(e)
+            return JsonResponse(response, status=400)
+
+        try:
+            box.delete()
+            response['status'] = 'success'
+            response['message'] = 'Касса удалена'
+            return JsonResponse(response, safe=False)
+        except Exception as e:
+            response['status'] = 'error'
+            response['message'] = str(e)
+            return JsonResponse(response, status=400)
+
+@csrf_exempt
+def rest_get_org(request):
+    response = {}
+    if request.method == 'GET':
+        user = UserCustom.objects.get(user_id__exact=request.user.pk)
+        response['name'] = user.org.name
+        response['active_to'] = user.active_to
+
+        return JsonResponse(response, safe=False)
