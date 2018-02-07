@@ -97,5 +97,18 @@ def count(value, card, d_plan, transaction):
     return card
 
 
-def rem_bonus(card, value):
-    return
+def rem_bonus(card, in_value):
+    value = float(in_value)
+    bonuses = card.get_bonuses()
+    for bonus in bonuses:
+        if bonus.value < value:
+            value -= bonus.value
+            bonus.delete()
+            continue
+        elif bonus.value == value:
+            bonus.delete()
+            break
+        else:
+            bonus.value -= value
+            bonus.save()
+            break

@@ -257,7 +257,7 @@ def rest_cards_list(request):
     response = {}
     if request.method == 'GET':
         user = UserCustom.objects.get(user_id__exact=request.user.pk)
-        cards = Card.objects.filter(org_id__exact=user.org.pk)[:100]
+        cards = Card.objects.filter(org_id__exact=user.org.pk, deleted__exact='n')[:100]
 
         serializer_context = {
             'request': Request(request),
@@ -281,9 +281,9 @@ def rest_cards_list(request):
             current = 0
             count = 50
 
-        total = Card.objects.filter(org_id__exact=user.org.pk).count()
+        total = Card.objects.filter(org_id__exact=user.org.pk, deleted__exact='n').count()
 
-        cards = Card.objects.filter(org_id__exact=user.org.pk)[current:current+count]
+        cards = Card.objects.filter(org_id__exact=user.org.pk, deleted__exact='n')[current:current+count]
 
         serializer_context = {
             'request': Request(request),
@@ -295,6 +295,43 @@ def rest_cards_list(request):
         response["list_total"] = total
 
         return JsonResponse(response, safe=False)
+
+    if request.method == 'DELETE':
+        user = UserCustom.objects.get(user_id__exact=request.user.pk)
+        data = json.loads(request.body.decode())
+
+        try:
+            for card_id in data:
+                card = Card.objects.get(pk=int(card_id))
+                card.deleted = 'y'
+                card.save()
+                response['status'] = 'success'
+                response['message'] = 'Карты успешно удалены'
+
+            return JsonResponse(response, safe=True)
+        except Exception as err:
+            response['status'] = 'error'
+            response['message'] = str(err)
+            return JsonResponse(response, status=400)
+
+    if request.method == 'RESTORE':
+        user = UserCustom.objects.get(user_id__exact=request.user.pk)
+        data = json.loads(request.body.decode())
+
+        try:
+            for card_id in data:
+                card = Card.objects.get(pk=int(card_id))
+                card.deleted = 'n'
+                card.save()
+                response['status'] = 'success'
+                response['message'] = 'Карты успешно восстановлены'
+
+            return JsonResponse(response, safe=True)
+        except Exception as err:
+            response['status'] = 'error'
+            response['message'] = str(err)
+            return JsonResponse(response, status=400)
+
 
 @csrf_exempt
 @login_required(login_url='/login/')
@@ -338,3 +375,5 @@ def rest_card_by_code(request, card_code):
         response['status'] = 'error'
         response['message'] = str(serializer.errors)
         return JsonResponse(response, status=400)
+
+

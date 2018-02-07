@@ -9,6 +9,7 @@ from queues.models import Task
 from django.contrib.auth import authenticate, login, logout
 from datetime import datetime, timedelta
 from django.utils.decorators import method_decorator
+from core.lib.bonus import rem_bonus
 
 
 def identify_task_operation(card, d_plan):
@@ -331,8 +332,9 @@ def apiRemCardBonus(request, card_code, salt):
                             trans.type = t_type
                             trans.save()
 
-                            card.bonus -= float(data['value'])
-                            card.save()
+                            value = float(data['value'])
+                            rem_bonus(card, value)
+
                             return HttpResponse(data['value'])
                         else:
                             return HttpResponse(status='404')

@@ -1,0 +1,60 @@
+
+.scroll-table-trans {
+        width: 100%;
+
+    }
+
+.scroll-table-trans thead,
+ .scroll-table-trans tbody,
+ .scroll-table-trans tr,
+  .scroll-table-trans td,
+   .scroll-table-trans th {
+    display: block;
+}
+
+.scroll-table-trans tr:after {
+    content: ' ';
+    display: block;
+    visibility: hidden;
+    clear: both;
+}
+
+.scroll-table-trans tr {
+
+
+    border-top: 1px solid #e9ecef;
+}
+
+.scroll-table-trans thead th {
+    height: auto;
+
+    /*text-align: left;*/
+}
+
+.scroll-table-trans tbody {
+    height: 300px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+.scroll-table-trans thead {
+    /* fallback */
+}
+
+
+.scroll-table-trans tbody td,
+ .scroll-table-trans thead th {
+    width: 8.2%;
+    text-align: center;
+    float: left;
+}
+
+.scroll-table-trans tbody td:last-child,
+ .scroll-table-trans thead th:last-child {
+    text-align: right;
+}
+
+.scroll-table-trans tbody td:first-child,
+ .scroll-table-trans thead th:first-child {
+    text-align: left;
+}

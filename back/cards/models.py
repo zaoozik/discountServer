@@ -64,7 +64,7 @@ class Card (models.Model):
         return result
 
     def get_bonuses(self):
-        return Bonus.objects.filter(card_id__exact=self.pk)
+        return Bonus.objects.filter(card_id__exact=self.pk).order_by('-active_from')
 
     def get_bonuses_array(self):
         bonuses = []

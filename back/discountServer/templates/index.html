@@ -10,6 +10,7 @@
         <link rel="stylesheet" type="text/css" href="/static/css/sb-admin-2.min.css">
         <link rel="stylesheet" type="text/css" href="/static/css/side-menu.css">
         <link rel="stylesheet" type="text/css" href="/static/css/scroll-data.css">
+        <link rel="stylesheet" type="text/css" href="/static/css/scroll-data-trans.css">
         <script type="text/javascript"  src="/static/js/jquery-3.2.1.min.js"></script>
         <script type="text/javascript"  src="/static/js/bootstrap.bundle.min.js"></script>
         <script type="text/javascript"  src="/static/js/jquery-ui.min.js"></script>
@@ -23,6 +24,13 @@
 
     <div class="operation-alert" id="alert"></div>
     </body>
+
+    <script>
+  $( function() {
+    $( "#dateTo" ).datepicker();
+    $( "#dateFrom" ).datepicker();
+  } );
+  </script>
 
     <footer class="fixed-bottom " style="background-color: #aaa; z-index: 55;">
 

@@ -11,6 +11,12 @@ background-color: white !important;
   width: calc(100% - 300px);
 }
 
+
+.disabled {
+    pointer-events:none; //This makes it not clickable
+    opacity:0.6;         //This grays it out to look disabled
+}
+
 .operation-alert{
     position: absolute;
     width: 300px;

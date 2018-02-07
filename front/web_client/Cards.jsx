@@ -160,12 +160,13 @@ export class CardInfo extends React.Component {
         }
 
         let discount_history = this.state.discount_history.map(function (item, index,){
-
+            let date = new Date(item.date);
             return (
+
 
                 <tr key={'discount_id_'+item.id}>
                     <td style={{color: "blue"}}>{item.bonus_add} %</td>
-                    <td>{item.date}</td>
+                    <td>{date.toLocaleString()}</td>
                     <td style={item.sum <0 ? sum_negative_style : sum_common_style}>{item.sum} руб.</td>
                 </tr>
             )
@@ -181,15 +182,52 @@ export class CardInfo extends React.Component {
         }
 
         let history = this.state.history.map(function (item, index,){
+            let isNone = (item) =>{
+                if ((item) == 0 || item =='0'){
+                    return '-'
+                }
+                else
+                {
+                    return item
+                }
+            }
+
+            let isNoneRub = (item) =>{
+                if ((item) == 0 || item =='0'){
+                    return '-'
+                }
+                else
+                {
+                    return item + " руб."
+                }
+            }
+
+            let date = new Date(item.date);
+            let type;
+            if (item.type == 'bonus_reduce') {
+                type = (<span style={{color: 'red'}}>Списание бонусов</span>);
+            }
+            else if (item.type == 'bonus_add') {
+                type = (<span style={{color: 'green'}}>Начисление бонусов</span>);
+            }
+            else if (item.type == 'sell') {
+                type = (<span style={{color: 'blue'}}>Продажа</span>);
+            }
+            else if (item.type == 'discount_recount') {
+                type = (<span style={{color: 'orange'}}>Пересчет скидки</span>);
+            }
+            else if (item.type == 'refund') {
+                type = (<span style={{color: 'red'}}>Возврат</span>);
+            }
 
             return (
 
                 <tr key={'history_id_'+item.id}>
-                    <td>{item.date}</td>
-                    <td>{item.type}</td>
-                    <td style={item.sum <0 ? sum_negative_style : sum_common_style}>{item.sum} руб.</td>
-                    <td>{item.bonus_add}</td>
-                    <td>{item.bonus_reduce}</td>
+                    <td>{date.toLocaleString()}</td>
+                    <td>{type}</td>
+                    <td style={item.sum <0 ? sum_negative_style : sum_common_style}>{isNoneRub(item.sum)}</td>
+                    <td>{isNone(item.bonus_add) + (item.type == 'discount_recount'? "%" : "")}</td>
+                    <td>{isNone(item.bonus_reduce)}</td>
 
 
                 </tr>
@@ -214,11 +252,11 @@ export class CardInfo extends React.Component {
                     <li class="nav-item">
                         <a class="nav-link active" id="home-tab"  href="#info" data-toggle="tab" role="tab" aria-controls="home" aria-selected="true" >Информация</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="bonus-tab" href="#bonus" data-toggle="tab" role="tab" aria-controls="home" aria-selected="true">Бонусы</a>
+                    <li class={"nav-item "}>
+                        <a  class={"nav-link " + (this.state.type=='discount'? 'disabled': '')} id="bonus-tab" href="#bonus" data-toggle="tab" role="tab" aria-controls="home" aria-selected="true">Бонусы</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="discount-tab" href="#discount" data-toggle="tab" role="tab" aria-controls="home" aria-selected="true">Скидки</a>
+                    <li  class="nav-item">
+                        <a class={"nav-link " + (this.state.type=='bonus'? 'disabled': '')} id="discount-tab" href="#discount" data-toggle="tab" role="tab" aria-controls="home" aria-selected="true">Скидки</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link "  id="history-tab" href="#history" data-toggle="tab" role="tab" aria-controls="home" aria-selected="true">Операции</a>
@@ -307,7 +345,7 @@ export class CardInfo extends React.Component {
                         {/*CARD INFO ENDS */}
 
                     </div>
-                    <div class="tab-pane fade" id="bonus" role="tabpanel" aria-labelledby="profile-tab">
+                    <div   class="tab-pane fade" id="bonus" role="tabpanel" aria-labelledby="profile-tab">
 
                         {/*CARD_BONUS STARTS*/}
 
@@ -418,15 +456,103 @@ export class CardsList extends React.Component{
             list_current_position: 0,
             list_count: 30,
             list_total: 0,
-            list_end: false
+            list_end: false,
+            selected: [],
+            filters: {
+                showDeleted: false
+            }
         }
+
+        this.targetSelection = this.targetSelection.bind(this);
+        this.restoreSelected = this.restoreSelected.bind(this);
+        this.deleteSelected = this.deleteSelected.bind(this);
+        this.setFilters = this.setFilters.bind(this);
+        this.showDeleted = this.showDeleted.bind(this);
 
     }
 
+    setFilters(e){
+        let filters = this.state.filters;
+        filters[e.target.name] = e.target.value;
+        this.setState(
+            {
+                filters: filters
+            }
+        )
+
+    }
+    showDeleted(e){
+        let filters = this.state.filters;
+        filters[e.target.name] = e.target.checked;
+        this.setState(
+            {
+                filters: filters
+            }
+        )
+
+    }
+
+    targetSelection(e){
+        let selected = this.state.selected;
+        if (e.target.checked){
+            selected.push(e.target.id);
+            this.setState(
+                {
+                    selected: selected
+                }
+            )}
+            else{
+                let pos = selected.indexOf(e.target.id);
+                if ( ~pos ) selected.splice(pos, 1);
+            this.setState(
+                {
+                    selected: selected
+                }
+            )
+
+            }
+    }
+
+    async deleteSelected(){
+        let data = await fetch("/cards/api/",
+            {
+                method: 'delete',
+                credentials: 'include',
+                body: JSON.stringify(this.state.selected),
+            } ).then(
+            response =>response.json())
+        this.setState({
+            cardsList: [],
+            list_current_position: 0,
+            list_count: 30,
+            list_total: 0,
+            list_end: false,
+            selected: []
+        })
+        this.loadCardsList();
+    }
+
+   async restoreSelected(){
+        let data = await fetch("/cards/api/",
+            {
+                method: 'restore',
+                credentials: 'include',
+                body: JSON.stringify(this.state.selected),
+            } ).then(
+            response =>response.json())
+       this.setState({
+           cardsList: [],
+           list_current_position: 0,
+           list_count: 30,
+           list_total: 0,
+           list_end: false,
+           selected: []
+       })
+       this.loadCardsList();
+    }
 
 
     async loadCardsList() {
-        console.log('start load');
         if (this.state.list_end){
             return;
         }
@@ -521,7 +647,7 @@ export class CardsList extends React.Component{
                 <tr key={'id_'+item.code}>
                     <td>
                         <input type={'checkbox'}
-                               id={item.code} />
+                               id={item.id} onChange={obj.targetSelection} />
                     </td>
                     <td>{item.code}</td>
                     <td>{type}</td>
@@ -544,16 +670,22 @@ export class CardsList extends React.Component{
 
         return (
             <div>
-                <CardsToolBox />
+                <CardsToolBox obj={this} />
+
 
                 {/* COUNTER PANEL*/}
 
                 <div class="form-group row pull-right">
                     <small id="total">{this.state.list_current_position + ' из '+ this.state.list_total}</small>
+
                 </div>
 
+
+
                 <div id={"data"}>
+
                 <table className={"scroll-table"} id={'scrollData'}>
+
                     <thead>
                         <tr>
                             <th></th>
@@ -596,17 +728,21 @@ class CardsToolBox extends React.Component{
                             data-target="#CardModal">
                         <i className={"fa fa-credit-card"} aria-hidden="true"></i> Добавить
                     </button>
+                    <span> </span>
                     <button className={"btn btn-danger btn-sm"}
-                            onclick="deleteCard();">
+                            disabled={this.props.obj.state.selected.length > 0? false: true}
+                            onClick={this.props.obj.deleteSelected}>
                             <i className="fa fa-trash-o" aria-hidden="true"></i> Удалить
                     </button>
+                    <span> </span>
                     <button className="btn btn-warning btn-sm"
-                            onclick="restoreCard();">
+                            disabled={this.props.obj.state.selected.length > 0? false: true}
+                            onClick={this.props.obj.restoreSelected}>
                             <i className="fa fa-recycle" aria-hidden="true"></i> Восстановить
                     </button>
                 </div>
                 <div className="col-5">
-                     <input type="text" id="search" className={css_form_control_sm} placeholder="Код карты или ФИО владельца" />
+                     <input type="text" name="search" onChange={this.props.obj.setFilters} className={css_form_control_sm} placeholder="Код карты или ФИО владельца" />
                 </div>
                 <div className="col-2">
                     <button className="btn btn-primary btn-sm"
@@ -620,14 +756,14 @@ class CardsToolBox extends React.Component{
                     <button className="btn btn-success btn-sm"
                             id="massAddCardButton"
                             data-toggle="modal"
-                            data-target="#MassCardModal">
+                            disabled={true}>
                             <i className="fa fa-users" aria-hidden="true"></i> Массовое добавление
                     </button>
                 </div>
                 <div className="col-5">
                     <div className="d-inline-block">
                         <small>Сортировать по</small>
-                        <select id="sort"
+                        <select id="sort" name={'sort'} onChange={this.props.obj.setFilters}
                             className={css_form_control_sm +"d-inline-block"}>
                                 <option value="code">КОД</option>
                                 <option value="holder_name">ФИО</option>
@@ -635,22 +771,25 @@ class CardsToolBox extends React.Component{
                         </select>
                     </div>
                     <div className="d-inline-block">
-                        <button id="order-desc"
+                        <button name="order"
+                                value={'-'}
                                 className="btn btn-outline-primary btn-sm active"
-                                onclick="setSortOrder('-');">
+                                onClick={this.props.obj.setFilters}>
                                 <i className="fa fa-sort-amount-desc" aria-hidden="true"></i>
                         </button>
                     </div>
+                    <span> </span>
                     <div className="d-inline-block">
-                            <button id="order-asc"
+                            <button name="order"
+                                    value={'+'}
                                     className="btn btn-outline-primary btn-sm "
-                                    onclick="setSortOrder('');">
+                                    onClick={this.props.obj.setFilters}>
                                     <i className="fa fa-sort-amount-asc" aria-hidden="true"></i>
                             </button>
                     </div>
                     <br />
                     <small>Тип карты</small>
-                    <select id="type"
+                    <select id="type" name={'card_type'} onChange={this.props.obj.setFilters}
                             className="form-control form-control-sm">
                             <option value="">Все</option>
                             <option value="bonus">Бонусная</option>
@@ -660,7 +799,8 @@ class CardsToolBox extends React.Component{
                     <label className="form-check-label form-control-sm">
                         <input className={css_form_control_sm + "form-check-input"}
                                type="checkbox"
-                               id="showDeleted" /> Показать удаленные
+                               onChange={this.props.obj.showDeleted}
+                               name="showDeleted" /> Показать удаленные
                     </label>
                 </div>
                 <div className="col-2">
@@ -669,9 +809,6 @@ class CardsToolBox extends React.Component{
                             <i className="fa fa-repeat" aria-hidden="true"></i> Сбросить
                     </button>
                 </div>
-            </div>
-            <div className="form-group row pull-right">
-                <small id="total"></small>
             </div>
             <hr />
         </div>
