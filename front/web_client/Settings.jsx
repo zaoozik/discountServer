@@ -291,16 +291,25 @@ export class Settings extends React.Component {
         catch (err) {
             rules = []
         }
-        console.log(rules);
+
+        let parameters = JSON.parse(data.parameters);
+        if (! parameters.bonus_mechanism){
+            parameters['bonus_mechanism'] = 'bonus_percent';
+        }
+        if (! parameters.round){
+            parameters['round'] = 'math';
+        }
 
         this.setState({
             id: data.id,
             algorithm: data.algorithm,
             rules: rules,
-            parameters: data.parameters ? JSON.parse(data.parameters): {},
+            parameters: parameters,
             time_delay: data.time_delay
 
         })
+
+
     }
 
 
@@ -308,7 +317,8 @@ export class Settings extends React.Component {
         this.setState(
             {
                 algorithm: e.target.value,
-                parameters: {},
+                parameters: {bonus_mechanism: 'bonus_percent',
+                                round: 'math'},
                 rules: []
             }
         )
@@ -517,7 +527,7 @@ export class Settings extends React.Component {
 
 
                     <label>Режим округления:</label>
-                    <select name="round" id="id_round" onChange={this.onInputChange} className="form-control ">
+                    <select name="round" id="id_round" value={this.state.parameters.round ? this.state.parameters.round: 'math'} onChange={this.onInputChange} className="form-control ">
                         <option value="math">Математическое округление</option>
 
                         <option value="up">В большую сторону</option>

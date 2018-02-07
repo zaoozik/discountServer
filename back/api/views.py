@@ -321,7 +321,7 @@ def apiRemCardBonus(request, card_code, salt):
 
                             card = Card.objects.get(code=card_code, org=cuser.org.pk)
 
-                            trans.bonus_before = card.bonus
+                            trans.bonus_before = card.get_total_bonus()
 
                             # пишем статистику
                             trans.org = cuser.org

@@ -45,7 +45,7 @@ def count(value, card, d_plan, transaction):
 
     if bonus_mechanism == 'bonus_percent':
         if 'bonus_percent' in parameters:
-            bonus_percent = float(parameters['bonus_cost'])
+            bonus_percent = float(parameters['bonus_percent'])
         else:
             return None
 
@@ -95,3 +95,7 @@ def count(value, card, d_plan, transaction):
     bonus.save()
 
     return card
+
+
+def rem_bonus(card, value):
+    return
