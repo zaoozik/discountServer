@@ -232,7 +232,7 @@ def apiToCardFromService(request):
                                     trans.date = datetime.strptime(data['datetime'], "%d.%m.%Y %H:%M:%S")
                                     card = Card.objects.get(code=data['card'], org=cuser.org.pk)
 
-                                    trans.bonus_before = card.bonus
+                                    trans.bonus_before = card.get_total_bonus()
 
                                     d_plan = DiscountPlan.objects.get(org_id__exact=cuser.org.pk)
                                     algorithm = d_plan.algorithm
@@ -272,7 +272,7 @@ def apiToCardFromService(request):
                                     trans.date = datetime.strptime(data['datetime'], "%d.%m.%Y %H:%M:%S")
                                     card = Card.objects.get(code=data['card'], org=cuser.org.pk)
 
-                                    trans.bonus_before = card.bonus
+                                    trans.bonus_before = card.get_total_bonus()
 
                                     # пишем статистику
                                     trans.org = cuser.org
@@ -282,8 +282,9 @@ def apiToCardFromService(request):
                                     trans.type = t_type
                                     trans.save()
 
-                                    card.bonus -= float(data['value'])
-                                    card.save()
+                                    value = float(data['value'])
+                                    rem_bonus(card, value)
+
                                     return HttpResponse(data['value'])
                                 else:
                                     return HttpResponse(status='404')

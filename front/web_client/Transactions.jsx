@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
+import { Link } from 'react-router-dom'
 
 export class Transactions extends React.Component {
     constructor(props) {
@@ -110,7 +111,7 @@ export class Transactions extends React.Component {
                 <tr key={'trans_id_'+item.id}>
                     <td>{date.toLocaleString()}</td>
                     <td>{type}</td>
-                    <td><a href={"/card/"+item.card.code + "/"}>{item.card.code}</a></td>
+                    <td><Link to={"/card/"+item.card.code + "/"}>{item.card.code}</Link></td>
                     <td>{isNoneRub(item.sum)}</td>
                     <td>{item.bonus_before}</td>
                     <td>{isNone(item.bonus_add)}</td>
@@ -135,17 +136,17 @@ export class Transactions extends React.Component {
 
         return(
             <div>
-
+                <br />
                 <h3>История операций</h3>
                 <hr />
                     <div class="form-group row">
                         <div class="col-3">
                             <label for = "dateFrom">Начало периода</label>
-                            <input class="form-control frorm-control-sm" type="text" id="dateFrom" />
+                            <input class="form-control form-control-sm" type="text" id="dateFrom" />
                                 <label for = "dateTo">Конец периода</label>
-                                <input class="form-control frorm-control-sm" type="text" id="dateTo" />
+                                <input class="form-control form-control-sm" type="text" id="dateTo" />
                                     <label for = "type">Тип операции</label>
-                                    <select class="form-control frorm-control-sm" name="type" id="type">
+                                    <select class="form-control form-control-sm" name="type" id="type">
                                         <option value="">Любой</option>
                                         <option value="sell">Продажа</option>
                                         <option value="refund">Возврат</option>
@@ -157,19 +158,19 @@ export class Transactions extends React.Component {
 
                         <div class="col-3">
                             <label for = "card">Номер карты</label>
-                            <input class="form-control frorm-control-sm" type="text" id="card"/>
+                            <input class="form-control form-control-sm" type="text" id="card"/>
                                 <label for = "workplace">Рабочее место</label>
-                                <input class="form-control frorm-control-sm" type="text" id="workplace" />
+                                <input class="form-control form-control-sm" type="text" id="workplace" />
                                     <label for = "session">Номер смены</label>
-                                    <input class="form-control frorm-control-sm" type="text" id="session" />
+                                    <input class="form-control form-control-sm" type="text" id="session" />
                         </div>
                         <div class="col-3">
                             <label for = "doc_close_user">Пользователь</label>
-                            <input class="form-control frorm-control-sm" type="text" id="doc_close_user"/>
+                            <input class="form-control form-control-sm" type="text" id="doc_close_user"/>
                                 <label for = "doc_number">Номер документа</label>
-                                <input class="form-control frorm-control-sm" type="text" id="doc_number" />
+                                <input class="form-control form-control-sm" type="text" id="doc_number" />
                                     <label for = "shop">Номер магазина</label>
-                                    <input class="form-control frorm-control-sm" type="text" id="shop" />
+                                    <input class="form-control form-control-sm" type="text" id="shop" />
 
                         </div>
                         <div class="col-3" style={{display: "inline"}}>
@@ -181,7 +182,6 @@ export class Transactions extends React.Component {
 
 
                     <hr />
-                        <br />
                             <div class="form-group row pull-right">
                                 <small id="total">{this.state.list_current_position + ' из '+ this.state.list_total}</small>
                             </div>

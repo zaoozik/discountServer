@@ -41,6 +41,11 @@
     float: left;
 }
 
+.scroll-table-row-deleted td {
+    color: red;
+    text-decoration: line-through;
+}
+
 .scroll-table tbody td:last-child,
  .scroll-table thead th:last-child {
     width: 5%;

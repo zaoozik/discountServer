@@ -49,6 +49,7 @@ export class CardInfo extends React.Component {
                 ""
         }
         this.saveCard = this.saveCard.bind(this);
+
     }
 
     async loadCard(code) {
@@ -127,9 +128,11 @@ export class CardInfo extends React.Component {
     }
 
     componentDidMount(){
-        this.loadCard(this.props.match.params.code);
-        this.loadDiscountHistory(this.props.match.params.code);
-        this.loadHistory(this.props.match.params.code);
+        if (this.props.match.params.code!='new') {
+            this.loadCard(this.props.match.params.code);
+            this.loadDiscountHistory(this.props.match.params.code);
+            this.loadHistory(this.props.match.params.code);
+        }
     }
 
     render() {
@@ -276,7 +279,7 @@ export class CardInfo extends React.Component {
                                 className={form_control_class}
                                 name={"code"}
                                 value={this.state.code}
-                                disabled={true}
+                                disabled={this.props.match.params.code=='new'? false: true }
                                 onChange={this.onInputChange}
                             />
                             <label>
@@ -459,7 +462,12 @@ export class CardsList extends React.Component{
             list_end: false,
             selected: [],
             filters: {
-                showDeleted: false
+                showDeleted: false,
+                card_type: "",
+                order: "",
+                sort: "code",
+                search: ""
+
             }
         }
 
@@ -468,7 +476,28 @@ export class CardsList extends React.Component{
         this.deleteSelected = this.deleteSelected.bind(this);
         this.setFilters = this.setFilters.bind(this);
         this.showDeleted = this.showDeleted.bind(this);
+        this.resetCardList = this.resetCardList.bind(this);
 
+    }
+
+    resetCardList(){
+        this.setState({
+            cardsList: [],
+            list_current_position: 0,
+            list_count: 30,
+            list_total: 0,
+            list_end: false,
+            selected: [],
+            filters: {
+                showDeleted: false,
+                card_type: "",
+                order: "",
+                sort: "code",
+                search: ""
+
+            }
+        })
+        this.updateCardsList();
     }
 
     setFilters(e){
@@ -476,9 +505,11 @@ export class CardsList extends React.Component{
         filters[e.target.name] = e.target.value;
         this.setState(
             {
+                selected: [],
                 filters: filters
-            }
-        )
+            })
+
+        this.updateCardsList();
 
     }
     showDeleted(e){
@@ -486,9 +517,11 @@ export class CardsList extends React.Component{
         filters[e.target.name] = e.target.checked;
         this.setState(
             {
-                filters: filters
+                filters: filters,
+                selected: []
             }
         )
+        this.updateCardsList();
 
     }
 
@@ -521,15 +554,7 @@ export class CardsList extends React.Component{
                 body: JSON.stringify(this.state.selected),
             } ).then(
             response =>response.json())
-        this.setState({
-            cardsList: [],
-            list_current_position: 0,
-            list_count: 30,
-            list_total: 0,
-            list_end: false,
-            selected: []
-        })
-        this.loadCardsList();
+        this.resetCardList();
     }
 
    async restoreSelected(){
@@ -540,17 +565,60 @@ export class CardsList extends React.Component{
                 body: JSON.stringify(this.state.selected),
             } ).then(
             response =>response.json())
-       this.setState({
-           cardsList: [],
-           list_current_position: 0,
-           list_count: 30,
-           list_total: 0,
-           list_end: false,
-           selected: []
-       })
-       this.loadCardsList();
+       this.resetCardList();
     }
 
+
+    async updateCardsList() {
+
+        this.setState({
+            list_current_position: 0,
+            list_count: 30,
+            list_total: 0,
+            list_end: false,
+            selected: [],
+        })
+
+
+        let data = await fetch("/cards/api/",
+            {
+                method: 'post',
+                credentials: 'include',
+                body: JSON.stringify({
+                    current: 0,
+                    count: 30,
+                    filter: this.state.filters
+                }),
+            } ).then(
+            response =>response.json())
+
+        let total = data.list_total;
+        let current = data.list_current_position;
+        let count = this.state.list_count;
+        let state = this.state.list_end;
+
+        if (total < count) {
+            count = total;
+
+        }
+        current = current + count;
+
+        if (current > total){
+            current = total;
+            state = true;
+        }
+
+        this.setState(
+            {
+                cardsList: [...data.data],
+                list_current_position: current,
+                list_total: total,
+                list_count: count,
+                list_end: state
+            }
+        )
+
+    }
 
     async loadCardsList() {
         if (this.state.list_end){
@@ -562,7 +630,8 @@ export class CardsList extends React.Component{
                     credentials: 'include',
                     body: JSON.stringify({
                         current: this.state.list_current_position,
-                        count: this.state.list_count
+                        count: this.state.list_count,
+                        filter: this.state.filters
                     }),
                 } ).then(
                     response =>response.json())
@@ -631,6 +700,7 @@ export class CardsList extends React.Component{
     render(){
         let temp = this.state.cardsList;
         var obj=this;
+        let deleted = {color: "red", "text-decoration" :"line-through"}
         let cards = temp.map(function (item, index,){
                 let type;
                 if (item.type == 'bonus'){
@@ -644,7 +714,7 @@ export class CardsList extends React.Component{
             }
             return (
 
-                <tr key={'id_'+item.code}>
+                <tr key={'id_'+item.code} className={item.deleted=='y'? "scroll-table-row-deleted": ""}>
                     <td>
                         <input type={'checkbox'}
                                id={item.id} onChange={obj.targetSelection} />
@@ -670,6 +740,8 @@ export class CardsList extends React.Component{
 
         return (
             <div>
+                <br />
+                <h3>Карты системы</h3>
                 <CardsToolBox obj={this} />
 
 
@@ -722,12 +794,12 @@ class CardsToolBox extends React.Component{
             <hr />
             <div className={"form-group row"}>
                 <div className={"col-5 "}>
+                    <Link to={'/card/new/'}>
                     <button className={"btn btn-success btn-sm"}
-                            id="addCardButton"
-                            data-toggle="modal"
-                            data-target="#CardModal">
+                            id="addCardButton">
                         <i className={"fa fa-credit-card"} aria-hidden="true"></i> Добавить
                     </button>
+                    </Link>
                     <span> </span>
                     <button className={"btn btn-danger btn-sm"}
                             disabled={this.props.obj.state.selected.length > 0? false: true}
@@ -742,13 +814,11 @@ class CardsToolBox extends React.Component{
                     </button>
                 </div>
                 <div className="col-5">
-                     <input type="text" name="search" onChange={this.props.obj.setFilters} className={css_form_control_sm} placeholder="Код карты или ФИО владельца" />
-                </div>
-                <div className="col-2">
-                    <button className="btn btn-primary btn-sm"
-                            onclick="dataUpdate();">
-                        <i className="fa fa-filter" aria-hidden="true"></i> Применить
-                    </button>
+                     <input type="text" name="search"
+                            value={this.props.obj.state.filters.search}
+                            onChange={this.props.obj.setFilters}
+                            className={css_form_control_sm}
+                            placeholder="Код карты или ФИО владельца" />
                 </div>
             </div>
             <div className="form-group row">
@@ -764,32 +834,39 @@ class CardsToolBox extends React.Component{
                     <div className="d-inline-block">
                         <small>Сортировать по</small>
                         <select id="sort" name={'sort'} onChange={this.props.obj.setFilters}
+                                value={this.props.obj.state.filters.sort}
                             className={css_form_control_sm +"d-inline-block"}>
                                 <option value="code">КОД</option>
                                 <option value="holder_name">ФИО</option>
                                 <option value="accumulation"> Накопления</option>
                         </select>
                     </div>
+                    <span> </span>
                     <div className="d-inline-block">
-                        <button name="order"
+                        <button
+                                role="button"
+                                name="order"
                                 value={'-'}
-                                className="btn btn-outline-primary btn-sm active"
+                                className={"btn btn-outline-primary btn-sm " + (this.props.obj.state.filters.order == '-' ? "active": "")}
                                 onClick={this.props.obj.setFilters}>
-                                <i className="fa fa-sort-amount-desc" aria-hidden="true"></i>
+                                <i value={'-'} className="fa fa-sort-amount-desc" arria-hiden="true"></i>
                         </button>
                     </div>
                     <span> </span>
                     <div className="d-inline-block">
-                            <button name="order"
-                                    value={'+'}
-                                    className="btn btn-outline-primary btn-sm "
+                            <button
+                                    role="button"
+                                    name="order"
+                                    value={''}
+                                    className={"btn btn-outline-primary btn-sm "  + (this.props.obj.state.filters.order == '' ? "active": "")}
                                     onClick={this.props.obj.setFilters}>
-                                    <i className="fa fa-sort-amount-asc" aria-hidden="true"></i>
+                                    <i  value={''} arria-hiden="true" className="fa fa-sort-amount-asc" ></i>
                             </button>
                     </div>
                     <br />
                     <small>Тип карты</small>
                     <select id="type" name={'card_type'} onChange={this.props.obj.setFilters}
+                            value={this.props.obj.state.filters.card_type}
                             className="form-control form-control-sm">
                             <option value="">Все</option>
                             <option value="bonus">Бонусная</option>
@@ -799,16 +876,12 @@ class CardsToolBox extends React.Component{
                     <label className="form-check-label form-control-sm">
                         <input className={css_form_control_sm + "form-check-input"}
                                type="checkbox"
+                               checked={this.props.obj.state.filters.showDeleted}
                                onChange={this.props.obj.showDeleted}
                                name="showDeleted" /> Показать удаленные
                     </label>
                 </div>
-                <div className="col-2">
-                    <button className="btn btn-primary btn-sm"
-                            onclick="clearFilter();">
-                            <i className="fa fa-repeat" aria-hidden="true"></i> Сбросить
-                    </button>
-                </div>
+
             </div>
             <hr />
         </div>

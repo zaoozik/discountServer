@@ -631,6 +631,7 @@ export class Settings extends React.Component {
 
         return (
             <div className={""}>
+                <br/>
                 <h3>Настройки</h3>
                 <ul className="nav nav-tabs" id="myTab" role="tablist">
                     <li className="nav-item">

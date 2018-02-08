@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import IntegrityError
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect, JsonResponse
 from django.db.models import Q
@@ -134,7 +135,7 @@ def maintenance(request):
                             "code": card.code,
                             "holder_name": card.holder_name,
                             "holder_phone": card.holder_phone,
-                            "accumulation" : card.accumulation,
+                            "accumulation": card.accumulation,
                             "bonus": card.bonus,
                             "discount": card.discount,
                             "type": card.type,
@@ -269,7 +270,28 @@ def rest_cards_list(request):
 
     if request.method == 'POST':
         user = UserCustom.objects.get(user_id__exact=request.user.pk)
+        q = Q(org_id__exact=user.org.pk)
         data = json.loads(request.body.decode())
+        order = ''
+        sort = 'code'
+        if 'filter' in data:
+            filter = data['filter']
+            if filter is not None:
+                if not filter["showDeleted"]:
+                    q &= Q(deleted__exact='n')
+                if filter["card_type"] != "":
+                    q &= Q(type__exact=filter["card_type"])
+                if is_digit(filter["search"]):
+                    q &= Q(code__startswith=filter["search"])
+                elif filter["search"] != '':
+                    q &= Q(holder_name__contains=filter["search"])
+                if "order" in filter:
+                    order = filter["order"]
+                # else:
+                #     order = '-'
+                if "sort" in filter:
+                    sort = filter["sort"]
+
         if ('current' in data) and ("count" in data):
             try:
                 current = int(data['current'])
@@ -281,9 +303,8 @@ def rest_cards_list(request):
             current = 0
             count = 50
 
-        total = Card.objects.filter(org_id__exact=user.org.pk, deleted__exact='n').count()
-
-        cards = Card.objects.filter(org_id__exact=user.org.pk, deleted__exact='n')[current:current+count]
+        total = Card.objects.filter(q).count()
+        cards = Card.objects.filter(q).order_by(order + sort).all()[current:current+count]
 
         serializer_context = {
             'request': Request(request),
@@ -361,7 +382,9 @@ def rest_card_by_code(request, card_code):
         try:
             card = Card.objects.get(org_id__exact=user.org.pk, code__exact=card_code)
         except:
-            return HttpResponse(status=404)
+            response['status'] = 'error'
+            response['message'] = "Карта с таким кодом не найдена!"
+            return JsonResponse(response, status=400)
 
         serializer_context = {
             'request': Request(request),
@@ -376,4 +399,29 @@ def rest_card_by_code(request, card_code):
         response['message'] = str(serializer.errors)
         return JsonResponse(response, status=400)
 
+@csrf_exempt
+@login_required(login_url='/login/')
+def rest_new_card(request):
+    response = {}
+    if request.method == 'PUT':
+        user = UserCustom.objects.get(user_id__exact=request.user.pk)
+        card_new_data = json.loads(request.body.decode())
 
+        card = Card()
+        card.org = user.org
+        card.reg_date = datetime.now()
+        card.changes_date = datetime.now()
+        card.holder_name = card_new_data['holder_name']
+        card.code = card_new_data['code']
+        card.holder_phone = card_new_data['holder_phone']
+        card.sex = card_new_data['sex']
+        card.type = card_new_data['type']
+        try:
+            card.save()
+            response['status'] = 'success'
+            response['message'] = 'Новая карта успешно заведена!'
+            return JsonResponse(response, safe=False)
+        except IntegrityError as err:
+            response['status'] = 'error'
+            response['message'] = 'Карта с таким кодом уже существует!'
+            return JsonResponse(response, safe=False)
