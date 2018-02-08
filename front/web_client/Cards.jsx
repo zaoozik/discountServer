@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Redirect } from 'react-router-dom';
 import {Alert} from './Tools.jsx';
 import ReactDOM from 'react-dom';
 
@@ -26,7 +26,7 @@ export class CardInfo extends React.Component {
             code:
                 "",
             deleted:
-                "",
+                "n",
             discount:
                 "",
             fav_date:
@@ -44,9 +44,9 @@ export class CardInfo extends React.Component {
             reg_date:
                 "",
             sex:
-                "",
+                "m",
             type:
-                ""
+                "bonus"
         }
         this.saveCard = this.saveCard.bind(this);
 
@@ -116,6 +116,7 @@ export class CardInfo extends React.Component {
                 } ).then(response =>response.json())
         if (data.status=='success'){
             ReactDOM.render(<Alert isError={false} message={data.message}/>, document.getElementById('alert'));
+            this.props.history.push("/card/"+this.state.code + "/");
         }
         if (data.status=='error'){
             ReactDOM.render(<Alert isError={true} message={data.message}/>, document.getElementById('alert'));
@@ -249,8 +250,10 @@ export class CardInfo extends React.Component {
 
         return (
             <div className={""}>
-            <h3>Карта номер {this.props.match.params.code}
+                <br />
+            <h3> {this.props.match.params.code == 'new'? "Новая карта" : "Карта "+this.props.match.params.code}
             </h3>
+                <br />
                 <ul class="nav nav-tabs" id="card-tab" role="tablist">
                     <li class="nav-item">
                         <a class="nav-link active" id="home-tab"  href="#info" data-toggle="tab" role="tab" aria-controls="home" aria-selected="true" >Информация</a>
