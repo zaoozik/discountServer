@@ -7,6 +7,7 @@ import {CardInfo} from './Cards.jsx';
 import {Settings} from './Settings.jsx'
 import {Transactions} from "./Transactions.jsx";
 import SideMenu from "./SideMenu.jsx";
+import {Queues} from "./Queues.jsx";
 
 export const Home = () =>(
 
@@ -54,6 +55,7 @@ export const Main =() =>(
                 <Route exact path={'/cards'} component={CardsList} />
                 <Route exact path={'/settings'} component={Settings} />
                 <Route exact path={'/transactions'} component={Transactions} />
+                <Route exact path={'/queue'} component={Queues} />
 
 
             </Switch>

@@ -2,6 +2,32 @@ import React from 'react';
 import { Link } from 'react-router-dom'
 
 class SideMenu extends React.Component {
+
+    constructor(props){
+        super(props);
+        this.state={
+            last_name: "",
+            first_name: "",
+        }
+    }
+
+    async loadName(){
+        let data = await fetch("/user/",
+            {
+                method: 'get',
+                credentials: 'include',
+            } ).then(response =>response.json())
+        this.setState(
+            {
+                ...data
+            }
+        )
+    }
+
+    componentDidMount(){
+        this.loadName();
+    }
+
   render() {
     return (
        <div className="nav-side-menu">
@@ -10,7 +36,7 @@ class SideMenu extends React.Component {
     </div>
     <div className="brand">
 
-            <a  className="nav-item" style={{marginRight: "10px"}}>"first_name  last_name"</a>
+            <a  className="nav-item" style={{marginRight: "10px"}}>{this.state.first_name + " " + this.state.last_name}</a>
             <a href = "/logout/" className="logout">Выйти</a>
 
     </div>
@@ -43,11 +69,11 @@ class SideMenu extends React.Component {
                     </li>
                 </Link>
 
-                <Link to="/service">
-                    <li>
-                        <i className="fa fa-database fa-lg" aria-hidden="true"></i> Сервисные операции
-                    </li>
-                </Link>
+                {/*<Link to="/service">*/}
+                    {/*<li>*/}
+                        {/*<i className="fa fa-database fa-lg" aria-hidden="true"></i> Сервисные операции*/}
+                    {/*</li>*/}
+                {/*</Link>*/}
 
                 <Link to="/settings">
                     <li>
@@ -56,7 +82,7 @@ class SideMenu extends React.Component {
                     </li>
                  </Link>
 
-                 <AdminButton />
+                 {/*<AdminButton />*/}
 
             </ul>
      </div>

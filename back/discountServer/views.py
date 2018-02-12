@@ -32,28 +32,28 @@ def signIn(request):
                 user = User.objects.get(username=post_data['username'])
             except:
                 response['result'] = 'error'
-                response['msg'] = 'Пользователь не найден'
+                response['message'] = 'Пользователь не найден'
                 return HttpResponse(json.dumps(response), content_type="application/json")
             if 'password' in post_data:
                 user = authenticate(username=post_data['username'], password=post_data['password'])
                 if user is not None:
                     if user.is_active:
                         login(request, user)
-                        response['result'] = 'ok'
-                        response['msg'] = "Авторизация ок!"
-                        return redirect('/')
+                        response['result'] = 'success'
+                        response['message'] = "Авторизация ок!"
+                        return JsonResponse(response)
                     else:
                         response['result'] = 'error'
-                        response['msg'] = "Пользователь не активен"
+                        response['message'] = "Пользователь не активен!"
                         return HttpResponse(json.dumps(response), content_type="application/json")
                 else:
                     response['result'] = 'error'
-                    response['msg'] = 'Пароль введен неверно'
+                    response['message'] = 'Неправильный логин или пароль.'
                     return HttpResponse(json.dumps(response), content_type="application/json")
 
         else:
             response['result'] = 'error'
-            response['msg'] = 'Пароль не введен'
+            response['message'] = 'Пароль не введен.'
             return HttpResponse(json.dumps(response), content_type="application/json")
 
         #return HttpResponse(json.dumps({'answer': "POST"}), content_type="application/json")

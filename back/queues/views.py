@@ -1,5 +1,7 @@
 import json
 from django.shortcuts import render
+
+from queues.serializers import TaskSerializer
 from .models import Transaction
 from django.contrib.auth.decorators import login_required
 from users.models import UserCustom
@@ -8,6 +10,7 @@ from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.models import User
 from django.template import loader
 from django.db.models import Q
+from rest_framework.request import Request
 
 
 # Create your views here.
@@ -56,3 +59,20 @@ def listQueue(request):
 
                 response = {"result": "ok", "data": resp_tasks, "total": total}
                 return HttpResponse(json.dumps(response), content_type="application/json")
+
+
+@login_required
+def rest_task_list(request):
+    if request.method == "GET":
+        response = {}
+        user = UserCustom.objects.get(user_id__exact=request.user.pk)
+
+        task = Task.objects.filter(org_id__exact=user.org.pk)[:100]
+
+        serializer_context = {
+            'request': Request(request),
+        }
+
+        serializer = TaskSerializer(task, many=True, context=serializer_context)
+        response = serializer.data
+        return JsonResponse(response, safe=False)

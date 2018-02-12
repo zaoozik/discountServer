@@ -23,6 +23,7 @@ from discountServer import views
 from transactions import views as t_views
 from queues import views as q_views
 from service import views as s_views
+from users import views as u_views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
@@ -40,6 +41,8 @@ urlpatterns = [
     url(r'^settings/frontol/$', views.exportFrontolSettings, name='exportFrontolSettings'),
     url(r'^settings/api/', include('core.rest_urls')),
     url(r'^cards/', include('cards.urls')),
+    url(r'^queue/', include('queues.rest_urls')),
+    url(r'^user/$', u_views.get_user, name='get_user'),
     url(r'^api/', include('api.urls')),
     url(r'^favicon.ico$', RedirectView.as_view(url='/static/images/favicon.ico'), name='favicon'),
 

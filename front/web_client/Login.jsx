@@ -1,6 +1,8 @@
 import React from 'react';
 import {render} from 'react-dom';
 import {login} from './auth';
+import ReactDOM from "react-dom";
+import {Alert} from "./Tools.jsx";
 
 
 
@@ -19,6 +21,7 @@ class Login extends React.Component{
             ;
         this.onChangeUsername = this.onChangeUsername.bind(this);
         this.onChangePassword = this.onChangePassword.bind(this);
+        this.localLogin = this.localLogin.bind(this);
     }
 
     onChangeUsername = (e) => {
@@ -29,9 +32,21 @@ class Login extends React.Component{
         this.setState({password: e.target.value});
     }
 
-    localLogin = () =>{
-        if(login(this.state.username, this.state.password)){
+    async localLogin(){
+            var obj = this;
+            let data = await fetch("/login/",
+                {
+                    method: 'post',
+                    body: JSON.stringify({username: obj.state.username, password: obj.state.password}),
+                    credentials: 'include',
+                } ).then(response =>response.json())
+
+
+        if (data.result == 'success'){
             this.props.history.push('/');
+        }
+        else if (data.result == 'error'){
+            ReactDOM.render(<Alert isError={true} message={data.message}/>, document.getElementById('alert'));
         }
 
     }
