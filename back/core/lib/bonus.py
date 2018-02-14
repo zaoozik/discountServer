@@ -66,12 +66,15 @@ def count(value, card, d_plan, transaction):
 
     if abs(value) < min_transaction:
         return card
-
+    if value <0:
+        op_type = Operations.bonus_refund
+    else:
+        op_type = Operations.bonus_add
     trans = Transaction(
         org=card.org,
         card=card,
         date=datetime.now(),
-        type=Operations.bonus_add,
+        type=op_type,
         bonus_before=card.get_total_bonus(),
         doc_number=transaction.doc_number,
         session=transaction.session,
@@ -99,6 +102,22 @@ def count(value, card, d_plan, transaction):
 
 def rem_bonus(card, in_value):
     value = float(in_value)
+    bonuses = card.get_bonuses_lifo()
+    for bonus in bonuses:
+        if bonus.value < value:
+            value -= bonus.value
+            bonus.delete()
+            continue
+        elif bonus.value == value:
+            bonus.delete()
+            break
+        else:
+            bonus.value -= value
+            bonus.save()
+            break
+
+
+def refund_bonus(card, refund_bonus):
     bonuses = card.get_bonuses()
     for bonus in bonuses:
         if bonus.value < value:
