@@ -57,7 +57,7 @@ class Card (models.Model):
             return 'Комбинированная'
 
     def get_total_bonus(self):
-        bonuses = Bonus.objects.filter(card_id__exact=self.pk)
+        bonuses = Bonus.objects.filter(card_id__exact=self.pk, enabled__exact=True)
         result = 0
         for bonus in bonuses:
             result += bonus.value
@@ -66,13 +66,16 @@ class Card (models.Model):
     def get_bonuses_lifo(self):
         return Bonus.objects.filter(card_id__exact=self.pk).order_by('-active_from')
 
-    def get_bonuses_fifo(self):
+    def get_bonuses_lifo_enabled(self):
+        return Bonus.objects.filter(card_id__exact=self.pk, enabled__exact=True).order_by('-active_from')
+
+    def get_bonuses_fifo_disabled(self):
         return Bonus.objects.filter(card_id__exact=self.pk).order_by('active_from')
 
     def get_bonuses_array(self):
         bonuses = []
         bonus_dict = {}
-        for bonus in Bonus.objects.filter(card_id__exact=self.pk):
+        for bonus in Bonus.objects.filter(card_id__exact=self.pk, enabled__exact=True):
             bonus_dict = {}
             bonus_dict['id'] = bonus.pk
             bonus_dict['value'] = bonus.value
@@ -93,6 +96,9 @@ class Bonus (models.Model):
     value = models.FloatField(default=0)
     active_from = models.DateTimeField(null=True)
     active_to = models.DateTimeField(null=True)
+    enabled = models.BooleanField(default=False)
+    task_id = models.IntegerField(null=True)
+    transaction_id = models.IntegerField(null=True)
     #transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
 
 

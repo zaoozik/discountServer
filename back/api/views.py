@@ -10,6 +10,7 @@ from django.contrib.auth import authenticate, login, logout
 from datetime import datetime, timedelta
 from django.utils.decorators import method_decorator
 from core.lib.bonus import rem_bonus
+from dateutil.relativedelta import relativedelta
 
 
 def identify_task_operation(card, d_plan):
@@ -185,15 +186,21 @@ def apiAddAccumToCard(request, card_code, salt):
 
                             if value >0:
                                 try: # Добавляем задание
-                                    task = Task(queue_date=datetime.now(),
-                                                execution_date= datetime.now() + timedelta(hours=d_plan.time_delay),
-                                                data=data['value'],
-                                                card=card,
-                                                operation=identify_task_operation(card, d_plan),
-                                                d_plan=d_plan,
-                                                transaction=trans,
-                                                org=card.org)
-                                    task.save()
+                                    # task = Task(queue_date=datetime.now(),
+                                    #             execution_date= datetime.now().date() + relativedelta(days=d_plan.time_delay),
+                                    #             data=data['value'],
+                                    #             card=card,
+                                    #             operation=identify_task_operation(card, d_plan),
+                                    #             d_plan=d_plan,
+                                    #             transaction=trans,
+                                    #             org=card.org)
+                                    # task.save()
+
+                                    _handler = __import__('core.lib.%s' % identify_task_operation(card, d_plan),
+                                                          globals(), locals(), ['count'], 0)
+                                    card = _handler.count(value, card, d_plan, trans)
+                                    card.save()
+
                                 except:
                                     pass
 
@@ -250,7 +257,7 @@ def apiToCardFromService(request):
 
                                     try: # Добавляем задание
                                         task = Task(queue_date=datetime.now(),
-                                                    execution_date= trans.date + timedelta(hours=d_plan.time_delay),
+                                                    execution_date= trans.date + relativedelta(days=d_plan.time_delay),
                                                     data=data['value'],
                                                     card=card,
                                                     operation=identify_task_operation(card, d_plan),

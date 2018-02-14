@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 from transactions.models import Transaction
 from core.models import Operations
 from cards.models import Bonus
+from dateutil.relativedelta import relativedelta
+from queues.models import Task
 #
 # bonus_cost = None
 # min_transaction = None
@@ -84,17 +86,33 @@ def count(value, card, d_plan, transaction):
     )
 
     bonus = Bonus()
-    bonus.active_from = datetime.now()
+    bonus.active_from = datetime.now() + relativedelta(days=d_plan.time_delay)
     bonus.card = card
     if bonus_mechanism == 'bonus_cost':
         bonus.value = custom_round((value / bonus_cost), rounding)
     elif bonus_mechanism == 'bonus_percent':
         bonus.value = custom_round((value * bonus_percent / 100), rounding)
 
-    bonus.active_to = bonus.active_from + timedelta(days=bonus_lifetime)
+    bonus.active_to = bonus.active_from + relativedelta(months=int(bonus_lifetime))
 
     trans.bonus_add = bonus.value
+
+    bonus.enabled = False
     trans.save()
+    bonus.transaction_id = transaction.pk
+
+    task = Task(queue_date=datetime.now(),
+                execution_date= datetime.now().date() + relativedelta(days=d_plan.time_delay),
+                data=transaction.sum,
+                card=card,
+                operation="bonus",
+                d_plan=d_plan,
+                transaction=trans,
+                org=card.org)
+    task.save()
+    bonus.task_id = task.pk
+
+
     bonus.save()
 
     return card
@@ -102,7 +120,7 @@ def count(value, card, d_plan, transaction):
 
 def rem_bonus(card, in_value):
     value = float(in_value)
-    bonuses = card.get_bonuses_lifo()
+    bonuses = card.get_bonuses_lifo_enabled()
     for bonus in bonuses:
         if bonus.value < value:
             value -= bonus.value

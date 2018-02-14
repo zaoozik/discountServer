@@ -243,7 +243,7 @@ class Workplaces extends React.Component{
         return(
             <div>
                 <br />
-                <p>Доступно касс для добавления {"3"}</p>
+                {/*<p>Доступно касс для добавления {"3"}</p>*/}
                 <hr />
                 {workplaces}
 
@@ -366,11 +366,20 @@ export class Settings extends React.Component {
         let parameter = e.target.name;
         let temp = this.state.parameters;
         temp[parameter] = e.target.value;
-        console.log(temp);
 
         this.setState(
             {
                 parameters: temp
+            }
+        )
+
+    }
+
+
+    onTimeDelayChange = (e) =>{
+        this.setState(
+            {
+                time_delay: e.target.value
             }
         )
 
@@ -538,14 +547,14 @@ export class Settings extends React.Component {
 
                     </select>
 
-                    <label>Задержка перед начислением бонуса, часы:</label>
+                    <label>Задержка перед начислением бонуса, дни:</label>
                     <input type ="number"
-                           onChange={this.onInputChange}
-                           value={this.state.parameters.assume_delta}
+                           onChange={this.onTimeDelayChange}
+                           value={this.state.time_delay}
                            className={css_form_control_sm}
                            name={"assume_delta"}/>
 
-                    <label>Срок действия бонусов, дни:</label>
+                    <label>Срок действия бонусов, месяцы:</label>
                     <input type ="number"
                            onChange={this.onInputChange}
                            value={this.state.parameters.bonus_lifetime}
