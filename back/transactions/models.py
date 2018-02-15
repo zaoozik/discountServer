@@ -28,6 +28,7 @@ class Transaction(models.Model):
     doc_external_id = models.CharField(verbose_name='Внешний номер документа', null=True, max_length=20)
     doc_close_user = models.CharField(verbose_name='Пользователь', max_length=100, null=True)
     shop = models.IntegerField(verbose_name='Номер мазагина', null=True)
+    base_doc_date = models.DateTimeField(verbose_name='Дата/Время документа основания', null=True)
 
     def create(self, values):
         if 'workplace' in values:

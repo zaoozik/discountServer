@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from django.utils.decorators import method_decorator
 from core.lib.bonus import rem_bonus
 from dateutil.relativedelta import relativedelta
+from dateutil.parser import parse
 
 
 def identify_task_operation(card, d_plan):
@@ -165,6 +166,10 @@ def apiAddAccumToCard(request, card_code, salt):
                             trans.sum = float(data['value'])
                             trans.bonus_reduce = 0
                             trans.type = t_type
+                            try:
+                                trans.base_doc_date = parse(data['base_doc_date'])
+                            except:
+                                trans.base_doc_date = None
 
                             d_plan = DiscountPlan.objects.get(org_id__exact=cuser.org.pk)
 
@@ -253,6 +258,12 @@ def apiToCardFromService(request):
                                     trans.sum = float(data['value'])
                                     trans.bonus_reduce = 0
                                     trans.type = t_type
+
+                                    try:
+                                        trans.base_doc_date = parse(data['base_doc_date'])
+                                    except:
+                                        trans.base_doc_date = None
+
                                     trans.save()
 
                                     try: # Добавляем задание

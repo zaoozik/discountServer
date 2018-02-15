@@ -69,8 +69,8 @@ class Card (models.Model):
     def get_bonuses_lifo_enabled(self):
         return Bonus.objects.filter(card_id__exact=self.pk, enabled__exact=True).order_by('-active_from')
 
-    def get_bonuses_fifo_disabled(self):
-        return Bonus.objects.filter(card_id__exact=self.pk).order_by('active_from')
+    def get_bonuses_disabled_by_date(self, date):
+        return Bonus.objects.filter(card_id__exact=self.pk, enabled__exact=False, date__date=date).order_by('active_from')
 
     def get_bonuses_array(self):
         bonuses = []
@@ -94,6 +94,7 @@ class Card (models.Model):
 class Bonus (models.Model):
     card = models.ForeignKey(Card, on_delete=models.CASCADE)
     value = models.FloatField(default=0)
+    date = models.DateTimeField(null=True)
     active_from = models.DateTimeField(null=True)
     active_to = models.DateTimeField(null=True)
     enabled = models.BooleanField(default=False)

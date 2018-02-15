@@ -105,6 +105,9 @@ export class Transactions extends React.Component {
             else if (item.type == 'refund') {
                 type = (<span style={{color: 'red'}}>Возврат</span>);
             }
+            else if (item.type == 'bonus_refund') {
+                type = (<span style={{color: 'red'}}>Отмена бонусов</span>);
+            }
 
 
             return (
