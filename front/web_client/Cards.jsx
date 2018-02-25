@@ -11,16 +11,17 @@ export class AddBonusModal extends React.Component{
     constructor(props){
         super(props);
         this.state = {
-            value: 0,
+            value: 1,
             active_to: Date.now(),
             active_from: Date.now()
 
         }
         this.render = this.render.bind(this);
+        this.addBonus = this.addBonus.bind(this);
     }
 
     async addBonus () {
-        let data = await fetch("/cards/api/" + this.props.card_code + "/",
+        let data = await fetch("/cards/api/" + this.props.card_code + "/bonus/",
             {
                 method: 'put',
                 body: JSON.stringify(this.state),
@@ -28,13 +29,25 @@ export class AddBonusModal extends React.Component{
             } ).then(response =>response.json())
         if (data.status=='success'){
             ReactDOM.render(<Alert isError={false} message={data.message}/>, document.getElementById('alert'));
-            this.props.history.push("/card/"+this.state.code + "/");
+            this.props.load(this.props.card_code);
         }
         if (data.status=='error'){
             ReactDOM.render(<Alert isError={true} message={data.message}/>, document.getElementById('alert'));
         }
 
     }
+
+    onValueChange = (e) =>{
+
+
+        this.setState(
+            {
+                value: e.target.value
+            }
+        )
+
+    }
+
 
     onDateFromChange = (d) =>{
 
@@ -74,33 +87,33 @@ export class AddBonusModal extends React.Component{
                                 <label >Количество*:</label>
                                 <input type="number"
                                        name="value"
-                                       onChange={this.onInputChange}
+                                       onChange={this.onValueChange}
                                        value={this.state.value}
                                        required=""
                                        className="form-control
                                                 form-control-sm"
                                 />
                                 <label >Действуют с*:</label>
-                                <input type="text"
-                                       id={"active_from"}
-                                       name="active_from"
-                                       onCompositionUpdate={this.onInputChange}
-                                       value={this.state.active_from}
-                                       min="0"
-                                       className="form-control form-control-sm date-picker"
-                                       required="" />
+                                <DatePicker
+                                    className="form-control form-control-sm "
+                                    dateFormat="YYYY-MM-DD"
+                                    locale={'ru-RU'}
+                                    placeholderText="Выберите дату"
+                                    onChange={this.onDateFromChange}
+                                    selected={moment(this.state.active_from)}/>
                                 <label >Действуют по*:</label>
                                 <DatePicker
                                     className="form-control form-control-sm "
                                                 dateFormat="YYYY-MM-DD"
                                                 locale={'ru-RU'}
+                                    placeholderText="Выберите дату"
                                              onChange={this.onDateToChange}
                                              selected={moment(this.state.active_to)}/>
                                
                             </div>
                         </div>
                         <div className="modal-footer">
-                            <button type="button" className="btn btn-primary" onClick={this.addBonus}>Добавить</button>
+                            <button type="button" className="btn btn-primary" data-dismiss="modal" onClick={this.addBonus}>Добавить</button>
                             <button type="button" id="modal_close" className="btn btn-secondary" data-dismiss="modal">Отмена</button>
                         </div>
                     </div>
@@ -153,7 +166,8 @@ export class CardInfo extends React.Component {
                 "bonus"
         }
         this.saveCard = this.saveCard.bind(this);
-        this.addBonus = this.addBonus.bind(this);
+        this.render  =this.render.bind(this);
+        this.deleteBonus=this.deleteBonus.bind(this);
 
     }
 
@@ -166,6 +180,27 @@ export class CardInfo extends React.Component {
                 } ).then(response =>response.json())
 
         })
+    }
+
+    async deleteBonus(e) {
+        if (confirm('Вы действительно хотите удалить бонусы?')) {
+
+            let data = await fetch("/cards/api/" + this.props.match.params.code + "/bonus/",
+                {
+                    method: 'delete',
+                    credentials: 'include',
+                    body: JSON.stringify({id: e.target.value})
+                }).then(response => response.json())
+
+            if (data.status == 'success') {
+                ReactDOM.render(<Alert isError={false} message={data.message}/>, document.getElementById('alert'));
+                this.loadCard(this.props.match.params.code);
+            }
+            if (data.status == 'error') {
+                ReactDOM.render(<Alert isError={true} message={data.message}/>, document.getElementById('alert'));
+            }
+        }
+
     }
 
     async loadDiscountHistory(code) {
@@ -229,22 +264,7 @@ export class CardInfo extends React.Component {
 
     }
 
-    async addBonus () {
-        let data = await fetch("/cards/api/" + this.props.match.params.code + "/",
-            {
-                method: 'put',
-                body: JSON.stringify(this.state),
-                credentials: 'include',
-            } ).then(response =>response.json())
-        if (data.status=='success'){
-            ReactDOM.render(<Alert isError={false} message={data.message}/>, document.getElementById('alert'));
-            this.props.history.push("/card/"+this.state.code + "/");
-        }
-        if (data.status=='error'){
-            ReactDOM.render(<Alert isError={true} message={data.message}/>, document.getElementById('alert'));
-        }
 
-    }
 
     componentWillUnmount(){
         ReactDOM.unmountComponentAtNode(document.getElementById('alert'));
@@ -262,7 +282,7 @@ export class CardInfo extends React.Component {
         let sum_negative_style = {color: 'red'};
         let sum_common_style = {color: 'black'};
         let form_control_class = "form-control form-control-sm";
-
+        let obj = this;
         let bonuses = this.state.bonuses.map(function (item, index,){
             let active_from = new Date(item.active_from);
             let active_to = new Date(item.active_to);
@@ -272,6 +292,7 @@ export class CardInfo extends React.Component {
                         <td>{item.value}</td>
                         <td>{active_from.toLocaleDateString()}</td>
                         <td>{active_to.toLocaleDateString()}</td>
+                        <td><button value={item.id} class="btn btn-small btn-outline-danger fa fa-times" onClick={obj.deleteBonus}></button></td>
                     </tr>
 
             )
@@ -344,6 +365,9 @@ export class CardInfo extends React.Component {
             }
             else if (item.type == 'refund') {
                 type = (<span style={{color: 'red'}}>Возврат</span>);
+            }
+            else if (item.type == 'bonus_refund') {
+                type = (<span style={{color: 'red'}}>Отмена бонусов</span>);
             }
 
             return (
@@ -494,15 +518,15 @@ export class CardInfo extends React.Component {
                                 </thead>
                                 <tbody>
                                     {bonuses}
-                                    <tr>
-                                        <td>
+                                    <tr >
+                                        <td colspan="4">
                                             <button className="btn btn-success btn-sm" id="addCashBoxButton" data-toggle="modal" data-target="#AddBonusModal">Добавить</button>
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
 
-                            <AddBonusModal />
+                            <AddBonusModal load={this.loadCard.bind(this)} card_code={this.props.match.params.code} />
 
                         </div>
 
@@ -679,14 +703,16 @@ export class CardsList extends React.Component{
     }
 
     async deleteSelected(){
-        let data = await fetch("/cards/api/",
-            {
-                method: 'delete',
-                credentials: 'include',
-                body: JSON.stringify(this.state.selected),
-            } ).then(
-            response =>response.json())
-        this.resetCardList();
+        if (confirm('Удалить выбранные карты?')) {
+            let data = await fetch("/cards/api/",
+                {
+                    method: 'delete',
+                    credentials: 'include',
+                    body: JSON.stringify(this.state.selected),
+                }).then(
+                response => response.json())
+            this.resetCardList();
+        }
     }
 
    async restoreSelected(){
@@ -979,9 +1005,9 @@ class CardsToolBox extends React.Component{
                                 role="button"
                                 name="order"
                                 value={'-'}
-                                className={"btn btn-outline-primary btn-sm " + (this.props.obj.state.filters.order == '-' ? "active": "")}
+                                className={"btn btn-outline-primary btn-sm fa fa-sort-amount-desc " + (this.props.obj.state.filters.order == '-' ? "active": "")}
                                 onClick={this.props.obj.setFilters}>
-                                <i value={'-'} className="fa fa-sort-amount-desc" arria-hiden="true"></i>
+
                         </button>
                     </div>
                     <span> </span>
@@ -990,9 +1016,8 @@ class CardsToolBox extends React.Component{
                                     role="button"
                                     name="order"
                                     value={''}
-                                    className={"btn btn-outline-primary btn-sm "  + (this.props.obj.state.filters.order == '' ? "active": "")}
+                                    className={"btn btn-outline-primary btn-sm fa fa-sort-amount-asc "  + (this.props.obj.state.filters.order == '' ? "active": "")}
                                     onClick={this.props.obj.setFilters}>
-                                    <i  value={''} arria-hiden="true" className="fa fa-sort-amount-asc" ></i>
                             </button>
                     </div>
                     <br />

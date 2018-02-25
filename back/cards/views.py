@@ -6,7 +6,8 @@ from django.http import HttpRequest, HttpResponse, HttpResponseRedirect, JsonRes
 from django.db.models import Q
 from rest_framework.request import Request
 
-from cards.models import Card
+from cards.models import Card, Bonus
+from transactions.models import Transaction
 from django.contrib.auth.decorators import login_required
 from django.template import loader
 from users.models import UserCustom
@@ -414,18 +415,71 @@ def rest_add_bonus(request, card_code):
             response['message'] = "Карта с таким кодом не найдена!"
             return JsonResponse(response, status=400)
 
-        serializer_context = {
-            'request': Request(request),
-        }
-        serializer = CardSerializer(card, data=bonus_data)
-        if serializer.is_valid():
-            serializer.save()
-            response['status'] = 'success'
-            response['message'] = 'Карта с кодом %s успешно сохранена!' % card_code
-            return JsonResponse(response, safe=False)
-        response['status'] = 'error'
-        response['message'] = str(serializer.errors)
-        return JsonResponse(response, status=400)
+        try:
+            bonus = Bonus()
+            bonus.card = card
+            try:
+                bonus.active_from = datetime.fromtimestamp(bonus_data['active_from']/1000)
+            except Exception as exc:
+                bonus.active_from = bonus_data['active_from']
+            try:
+                bonus.active_to = datetime.fromtimestamp(bonus_data['active_to']/1000)
+            except:
+                bonus.active_to = bonus_data['active_to']
+            bonus.value = float(bonus_data['value'])
+            bonus.enabled = True
+            bonus.save()
+
+            trans = Transaction()
+            trans.card = card
+            trans.type = 'bonus_add'
+            trans.date = datetime.now()
+            trans.org = user.org
+            trans.bonus_add = bonus.value
+            trans.workplace = 'ВТИ-ДИСКОНТ'
+            trans.doc_close_user = user.user.first_name +" "+ user.user.last_name
+            trans.save()
+        except Exception as err:
+            response['status'] = 'error'
+            response['message'] = str(err)
+            return JsonResponse(response, status=400)
+
+        response['status'] = 'success'
+        response['message'] = 'Бонусы добавлены'
+        return JsonResponse(response, safe=False)
+
+    if request.method == 'DELETE':
+        user = UserCustom.objects.get(user_id__exact=request.user.pk)
+        bonus_data = json.loads(request.body.decode())
+        try:
+            card = Card.objects.get(org_id__exact=user.org.pk, code__exact=card_code)
+        except:
+            response['status'] = 'error'
+            response['message'] = "Карта с таким кодом не найдена!"
+            return JsonResponse(response, status=400)
+
+        try:
+            bonus = Bonus.objects.get(id__exact=int(bonus_data['id']))
+            bonus.delete()
+
+            trans = Transaction()
+            trans.card = card
+            trans.type = 'bonus_refund'
+            trans.date = datetime.now()
+            trans.org = user.org
+            trans.bonus_add = bonus.value
+            trans.workplace = 'ВТИ-ДИСКОНТ'
+            trans.doc_close_user = user.user.first_name + " " + user.user.last_name
+            trans.save()
+        except Exception as err:
+            response['status'] = 'error'
+            response['message'] = str(err)
+            return JsonResponse(response, status=400)
+
+        response['status'] = 'success'
+        response['message'] = 'Бонусы удалены'
+        return JsonResponse(response, safe=False)
+
 
 @csrf_exempt
 @login_required(login_url='/login/')
