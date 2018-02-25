@@ -2,10 +2,114 @@ import React from 'react';
 import { Link, Redirect } from 'react-router-dom';
 import {Alert} from './Tools.jsx';
 import ReactDOM from 'react-dom';
+import DatePicker from 'react-datepicker';
+import moment from "moment";
 
 
 
+export class AddBonusModal extends React.Component{
+    constructor(props){
+        super(props);
+        this.state = {
+            value: 0,
+            active_to: Date.now(),
+            active_from: Date.now()
 
+        }
+        this.render = this.render.bind(this);
+    }
+
+    async addBonus () {
+        let data = await fetch("/cards/api/" + this.props.card_code + "/",
+            {
+                method: 'put',
+                body: JSON.stringify(this.state),
+                credentials: 'include',
+            } ).then(response =>response.json())
+        if (data.status=='success'){
+            ReactDOM.render(<Alert isError={false} message={data.message}/>, document.getElementById('alert'));
+            this.props.history.push("/card/"+this.state.code + "/");
+        }
+        if (data.status=='error'){
+            ReactDOM.render(<Alert isError={true} message={data.message}/>, document.getElementById('alert'));
+        }
+
+    }
+
+    onDateFromChange = (d) =>{
+
+
+        this.setState(
+            {
+                active_from: d
+            }
+        )
+
+    }
+
+    onDateToChange = (d) =>{
+
+
+        this.setState(
+            {
+                active_to: d
+            }
+        )
+
+    }
+
+    render(){
+        return(
+            <div className="modal fade" id="AddBonusModal">
+                <div className="modal-dialog" role="document">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h5 className="modal-title">Добавить бонусы</h5>
+                            <button type="button" class="close"  data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div key="BonusForm" >
+                                <label >Количество*:</label>
+                                <input type="number"
+                                       name="value"
+                                       onChange={this.onInputChange}
+                                       value={this.state.value}
+                                       required=""
+                                       className="form-control
+                                                form-control-sm"
+                                />
+                                <label >Действуют с*:</label>
+                                <input type="text"
+                                       id={"active_from"}
+                                       name="active_from"
+                                       onCompositionUpdate={this.onInputChange}
+                                       value={this.state.active_from}
+                                       min="0"
+                                       className="form-control form-control-sm date-picker"
+                                       required="" />
+                                <label >Действуют по*:</label>
+                                <DatePicker
+                                    className="form-control form-control-sm "
+                                                dateFormat="YYYY-MM-DD"
+                                                locale={'ru-RU'}
+                                             onChange={this.onDateToChange}
+                                             selected={moment(this.state.active_to)}/>
+                               
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button type="button" className="btn btn-primary" onClick={this.addBonus}>Добавить</button>
+                            <button type="button" id="modal_close" className="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        )
+    }
+}
 
 export class CardInfo extends React.Component {
     constructor(props) {
@@ -49,6 +153,7 @@ export class CardInfo extends React.Component {
                 "bonus"
         }
         this.saveCard = this.saveCard.bind(this);
+        this.addBonus = this.addBonus.bind(this);
 
     }
 
@@ -114,6 +219,23 @@ export class CardInfo extends React.Component {
                     body: JSON.stringify(this.state),
                     credentials: 'include',
                 } ).then(response =>response.json())
+        if (data.status=='success'){
+            ReactDOM.render(<Alert isError={false} message={data.message}/>, document.getElementById('alert'));
+            this.props.history.push("/card/"+this.state.code + "/");
+        }
+        if (data.status=='error'){
+            ReactDOM.render(<Alert isError={true} message={data.message}/>, document.getElementById('alert'));
+        }
+
+    }
+
+    async addBonus () {
+        let data = await fetch("/cards/api/" + this.props.match.params.code + "/",
+            {
+                method: 'put',
+                body: JSON.stringify(this.state),
+                credentials: 'include',
+            } ).then(response =>response.json())
         if (data.status=='success'){
             ReactDOM.render(<Alert isError={false} message={data.message}/>, document.getElementById('alert'));
             this.props.history.push("/card/"+this.state.code + "/");
@@ -372,8 +494,15 @@ export class CardInfo extends React.Component {
                                 </thead>
                                 <tbody>
                                     {bonuses}
+                                    <tr>
+                                        <td>
+                                            <button className="btn btn-success btn-sm" id="addCashBoxButton" data-toggle="modal" data-target="#AddBonusModal">Добавить</button>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
+
+                            <AddBonusModal />
 
                         </div>
 

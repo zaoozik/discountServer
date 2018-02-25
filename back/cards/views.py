@@ -401,6 +401,34 @@ def rest_card_by_code(request, card_code):
 
 @csrf_exempt
 @login_required(login_url='/login/')
+def rest_add_bonus(request, card_code):
+    response = {}
+
+    if request.method == 'PUT':
+        user = UserCustom.objects.get(user_id__exact=request.user.pk)
+        bonus_data = json.loads(request.body.decode())
+        try:
+            card = Card.objects.get(org_id__exact=user.org.pk, code__exact=card_code)
+        except:
+            response['status'] = 'error'
+            response['message'] = "Карта с таким кодом не найдена!"
+            return JsonResponse(response, status=400)
+
+        serializer_context = {
+            'request': Request(request),
+        }
+        serializer = CardSerializer(card, data=bonus_data)
+        if serializer.is_valid():
+            serializer.save()
+            response['status'] = 'success'
+            response['message'] = 'Карта с кодом %s успешно сохранена!' % card_code
+            return JsonResponse(response, safe=False)
+        response['status'] = 'error'
+        response['message'] = str(serializer.errors)
+        return JsonResponse(response, status=400)
+
+@csrf_exempt
+@login_required(login_url='/login/')
 def rest_new_card(request):
     response = {}
     if request.method == 'PUT':

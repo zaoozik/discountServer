@@ -60,6 +60,7 @@ class CashBox(models.Model):
     online = models.BooleanField(verbose_name='Касса онлайн', default=False)
     online_from = models.DateTimeField(verbose_name='Дата последнего подключения', null=True)
     co_unit = models.ForeignKey(COUnit, on_delete=models.CASCADE, null=True)
+    address = models.CharField(max_length=100, verbose_name='Адрес')
 
     class Meta:
         indexes = [

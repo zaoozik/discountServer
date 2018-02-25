@@ -138,6 +138,7 @@ export class Transactions extends React.Component {
         }
 
         return(
+
             <div>
                 <br />
                 <h3>История операций</h3>
@@ -145,9 +146,9 @@ export class Transactions extends React.Component {
                     <div class="form-group row">
                         <div class="col-3">
                             <label for = "dateFrom">Начало периода</label>
-                            <input class="form-control form-control-sm" type="text" id="dateFrom" />
+                            <input class="form-control form-control-sm date-picker" type="text" />
                                 <label for = "dateTo">Конец периода</label>
-                                <input class="form-control form-control-sm" type="text" id="dateTo" />
+                                <input class="form-control form-control-sm date-picker" type="text" />
                                     <label for = "type">Тип операции</label>
                                     <select class="form-control form-control-sm" name="type" id="type">
                                         <option value="">Любой</option>
@@ -218,6 +219,7 @@ export class Transactions extends React.Component {
                     </tbody>
                 </table>
             </div>
+
 
 
         </div>
