@@ -130,7 +130,7 @@ def count(value, card, d_plan, transaction):
 
 def rem_bonus(card, in_value):
     value = float(in_value)
-    bonuses = card.get_bonuses_lifo_enabled()
+    bonuses = card.get_bonuses_fifo_enabled()
     for bonus in bonuses:
         if bonus.value < value:
             value -= bonus.value

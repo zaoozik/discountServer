@@ -69,6 +69,9 @@ class Card (models.Model):
     def get_bonuses_lifo_enabled(self):
         return Bonus.objects.filter(card_id__exact=self.pk, enabled__exact=True).order_by('-active_from')
 
+    def get_bonuses_fifo_enabled(self):
+        return Bonus.objects.filter(card_id__exact=self.pk, enabled__exact=True).order_by('active_from')
+
     def get_bonuses_disabled_by_date(self, date):
         return Bonus.objects.filter(card_id__exact=self.pk, enabled__exact=False, date__date=date).order_by('active_from')
 
