@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import DiscountPlan
-from users.models import CashBox
+from orgs.models import Org, CashBox
 
 
 class DiscountPlanSerializer(serializers.ModelSerializer):

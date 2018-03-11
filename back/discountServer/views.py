@@ -9,7 +9,8 @@ from django.template import loader, RequestContext
 
 from core.forms import BonusForm, DiscountForm, ComboForm, AlgorithmForm
 from users.forms import CashBoxForm
-from users.models import UserCustom, CashBox
+from users.models import UserCustom
+from orgs.models import CashBox
 from core.models import DiscountPlan
 from queues.models import Task
 

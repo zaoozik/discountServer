@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import {Alert} from './Tools.jsx';
 import ReactDOM from 'react-dom';
 
+var COID = 0;
+
 class Org extends React.Component{
     constructor(props){
         super(props);
@@ -49,12 +51,104 @@ class Org extends React.Component{
 }
 
 
-class WorkplaceModal extends React.Component{
+class COUnitModal extends React.Component{
     constructor(props){
         super(props);
         this.state = {
             address:
                 "",
+
+            name:
+                "",
+
+        }
+
+        this.saveCOUnit = this.saveCOUnit.bind(this);
+    }
+
+    async saveCOUnit(){
+        let data = await fetch("/settings/api/counit/",
+            {
+                method: 'PUT',
+                body: JSON.stringify(this.state),
+                credentials: 'include',
+            } ).then(response =>response.json())
+
+        if (data.status=='success'){
+            $('#co_modal_close').click();
+            this.props.update();
+            ReactDOM.render(<Alert isError={false} message={data.message}/>, document.getElementById('alert'));
+        }
+        if (data.status=='error'){
+            ReactDOM.render(<Alert isError={true} message={data.message}/>, document.getElementById('alert'));
+        }
+
+    }
+
+    onInputChange = (e) =>{
+        let parameter = e.target.name;
+        let temp = this.state;
+        temp[parameter] = e.target.value;
+        //temp["co_unit_id"] = COID;
+
+        this.setState(
+            {
+                ... temp
+            }
+        )
+
+    }
+
+    render(){
+        let obj = this;
+        return(
+            <div className="modal fade" id="COUnitModal">
+                <div className="modal-dialog" role="document">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h5 className="modal-title">Торговый объект</h5>
+                            <button type="button" class="close"  data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div key="COUnitForm" >
+                                <label >Наименование*:</label>
+                                <input type="text"
+                                       name="name"
+                                       onChange={obj.onInputChange}
+                                       value={obj.state.name}
+                                       required=""
+                                       className="form-control
+                                                form-control-sm"
+                                />
+                                <label >Адрес*:</label>
+                                <input type="text"
+                                       name="address"
+                                       onChange={obj.onInputChange}
+                                       value={obj.state.address}
+                                       className="form-control form-control-sm" />
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button type="button" className="btn btn-primary" onClick={this.saveCOUnit}>Сохранить</button>
+                            <button type="button" id="co_modal_close" className="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+}
+
+
+
+class WorkplaceModal extends React.Component{
+    constructor(props){
+        super(props);
+        this.state = {
+            co_unit_id:
+            COID,
 
             frontol_version:
                 "",
@@ -71,7 +165,11 @@ class WorkplaceModal extends React.Component{
     }
 
     async saveWorkplace(){
-        console.log("saving");
+        this.setState(
+            {
+                co_unit_id: COID
+            }
+        );
         let data = await fetch("/settings/api/workplaces/",
             {
                 method: 'PUT',
@@ -94,6 +192,7 @@ class WorkplaceModal extends React.Component{
         let parameter = e.target.name;
         let temp = this.state;
         temp[parameter] = e.target.value;
+        temp["co_unit_id"] = COID;
 
         this.setState(
             {
@@ -134,12 +233,6 @@ class WorkplaceModal extends React.Component{
                                                min="0"
                                                className="form-control form-control-sm"
                                                required="" />
-                                    <label >Адрес кассы*:</label>
-                                            <input type="text"
-                                                   name="address"
-                                                   onChange={obj.onInputChange}
-                                                   value={obj.state.address}
-                                                   className="form-control form-control-sm" />
                                     <label>Версия Frontol*:</label>
                                                 <input type="text"
                                                        name="frontol_version"
@@ -168,6 +261,7 @@ class Workplaces extends React.Component{
         }
 
         this.deleteWorkPlace = this.deleteWorkPlace.bind(this);
+        this.deleteCOUnit = this.deleteCOUnit.bind(this);
     }
 
     async loadWorkPlaces(){
@@ -185,29 +279,52 @@ class Workplaces extends React.Component{
     }
 
     async deleteWorkPlace(e){
-        console.log(e.target.value);
-        let data = await fetch("/settings/api/workplaces",
-            {
-                method: 'delete',
-                credentials: 'include',
-                body: e.target.value
-            } ).then(response =>response.json())
+        if (confirm('Вы действительно хотите удалить кассу?')) {
+            let data = await fetch("/settings/api/workplaces",
+                {
+                    method: 'delete',
+                    credentials: 'include',
+                    body: e.target.value
+                }).then(response => response.json())
 
-        if (data.status=='success'){
-            this.loadWorkPlaces();
-            ReactDOM.render(<Alert isError={false} message={data.message}/>, document.getElementById('alert'));
+            if (data.status == 'success') {
+                this.loadWorkPlaces();
+                ReactDOM.render(<Alert isError={false} message={data.message}/>, document.getElementById('alert'));
+            }
+            if (data.status == 'error') {
+                ReactDOM.render(<Alert isError={true} message={data.message}/>, document.getElementById('alert'));
+            }
+
+
         }
-        if (data.status=='error'){
-            ReactDOM.render(<Alert isError={true} message={data.message}/>, document.getElementById('alert'));
+    }
+
+    async deleteCOUnit(e){
+        if (confirm('Вы действительно хотите удалить торговый объект?')) {
+            let data = await fetch("/settings/api/counit",
+                {
+                    method: 'delete',
+                    credentials: 'include',
+                    body: e.target.value
+                }).then(response => response.json())
+
+            if (data.status == 'success') {
+                this.loadWorkPlaces();
+                ReactDOM.render(<Alert isError={false} message={data.message}/>, document.getElementById('alert'));
+            }
+            if (data.status == 'error') {
+                ReactDOM.render(<Alert isError={true} message={data.message}/>, document.getElementById('alert'));
+            }
+
+
         }
-
-
-
     }
 
     componentDidMount(){
         this.loadWorkPlaces();
     }
+
+
 
     render(){
         let online = (
@@ -217,41 +334,80 @@ class Workplaces extends React.Component{
             <span style={{"color": "red"}}>оффлайн</span>
         );
         let obj = this;
+
         let workplaces = this.state.workplaces.map(function (item, index) {
+            let setCOId = (e) =>{
+                COID = e.target.value;
+            }
             return (
-                <div key={"workplace_"+index}>
-                    <p><strong>Касса: "{ item.name +"  "}" </strong>
-                        <button value={item.id} onClick={obj.deleteWorkPlace} className="btn btn-small btn-outline-danger" >
-                            <i className="fa fa-times" aria-hidden="true"></i>
-                        </button>
+                <li className={"list-group-item"} key={"workplace_"+index} style={{marginBottom: '1rem'}}>
+                    <button type="button" className="close fa fa-trash" aria-label="Close" value={item.id} onClick={obj.deleteCOUnit}>
+
+                    </button>
+
+                    <p><strong>{ item.name +"  "}</strong>
                     </p>
-                    <p>Адрес: {item.address}</p>
-                    <p>Статус: { item.online ? online: offline}</p>
-                    <p>Версия Frontol - { item.frontol_version }</p>
-                    <p>Ключ доступа FRONTOL - {item.frontol_key}</p>
-                    <p><a href={"/settings/frontol/?KEY=" + item.frontol_key }>
-                        <i className="fa fa-download" aria-hidden="true" > </i>
-                        Файл настроек FRONTOL
-                    </a>
-                </p>
-                    <hr />
-                </div>
+                    <p className={"font-italic"}>Адрес: {item.address}</p>
+                    <a data-toggle="collapse" href={"#co_"+item.id} role="button" aria-expanded="false" aria-controls="collapseExample"><i class="fa fa-sort-desc fa-2x" aria-hidden="true"></i></a>
+                    <div className={"containter collapse"} id={"co_"+item.id}>
+                        <div className={"row"}>
+                            {(item.cashboxes.length)==0 ? <div className={"text-muted col"}> <p>кассы отсутствуют </p> </div> : ""}
+                            {item.cashboxes.map(function(item, index){
+                                return(
+                                <div className={"card"} style={{marginLeft: '1rem', marginBottom: '1rem'}}>
+                                    <div className={"card-body"}>
+                                        <button type="button" className="close fa fa-trash" aria-label="Close" value={item.id} onClick={obj.deleteWorkPlace}>
+
+                                        </button>
+                                        <h6 className={"card-title"}><i class="fa fa-money" aria-hidden="true"></i> {item.name}</h6>
+                                        <p>
+                                            Номер кассы: {item.serial_number}<br />
+                                            Статус: { item.online ? online: offline}<br/>
+                                            Версия Frontol - { item.frontol_version }<br/>
+                                            Ключ доступа FRONTOL: <br /> {item.frontol_key}
+                                        </p>
+                                        <div className={"card-footer"}><a href={"/settings/frontol/?KEY=" + item.frontol_key }>
+                                            <i className="fa fa-download" aria-hidden="true" > </i>
+                                            Файл настроек FRONTOL5
+                                        </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                )
+                            })}
+
+
+                        </div>
+
+                        <button
+                            value={item.id}
+                            className="btn btn-success btn-sm"
+                            id="addCashBoxButton"
+                            data-toggle="modal"
+                            onClick={setCOId}
+                            data-target="#CashBoxModal"><i class="fa fa-plus" aria-hidden="true"></i> Новая касса </button>
+                    </div>
+
+                </li>
 
             )
 
         })
         return(
             <div>
-                <br />
-                {/*<p>Доступно касс для добавления {"3"}</p>*/}
                 <hr />
+                <h5>Торговые объекты</h5>
+                <hr />
+                <ul class="list-group">
                 {workplaces}
-
+                </ul>
+                <br />
                 <p>
-                    <button className="btn btn-success btn-sm" id="addCashBoxButton" data-toggle="modal" data-target="#CashBoxModal"><i class="fa fa-money" aria-hidden="true"></i> Добавить </button>
+                    <button className="btn btn-success btn-sm" id="addCOUnitButton" data-toggle="modal" data-target="#COUnitModal"><i class="fa fa-money" aria-hidden="true"></i> Добавить торговый объект </button>
                 </p>
 
                 <WorkplaceModal update={this.loadWorkPlaces.bind(this)}/>
+                <COUnitModal update={this.loadWorkPlaces.bind(this)}/>
 
             </div>
         )

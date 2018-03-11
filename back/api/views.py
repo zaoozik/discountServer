@@ -2,7 +2,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpRequest, HttpResponse
 from cards.models import Card
-from users.models import UserCustom, CashBox
+from users.models import UserCustom
+from orgs.models import CashBox
 from transactions.models import Transaction
 from core.models import DiscountPlan, Operations
 from queues.models import Task
@@ -94,17 +95,17 @@ def apiGetCard(request, card_code, salt):
             box = check_license(data['key'], data['session_key'])
             if box:
                 try:
-                    cuser = box.user
+                    org = box.co_unit.org
                 except:
                     return HttpResponse(status=403)
-                    cuser = None
+                    org = None
             else:
                 return HttpResponse(status=403)
-            if cuser is not None:
-                if cuser.user.is_active:
+            if org is not None:
+                if org.is_active:
                     try:
-                        card = Card.objects.get(code=card_code, org=cuser.org.pk, deleted='n')
-                        d_plan = DiscountPlan.objects.get(org=cuser.org.pk)
+                        card = Card.objects.get(code=card_code, org=org.pk, deleted='n')
+                        d_plan = DiscountPlan.objects.get(org=org.pk)
                         # Логика взаимодействия режима дисконтной системы и типов карт
                         # В комбинированном режиме работают дисконтные, бонусные и комбинированные карты.
                         # В режиме"Бонусы" работают бонусные и комбинированные карты.
@@ -146,22 +147,23 @@ def apiAddAccumToCard(request, card_code, salt):
             box = check_license(data['key'], data['session_key'])
             if box:
                 try:
-                    cuser = box.user
+                    org = box.co_unit.org
                 except:
-                    cuser = None
+                    return HttpResponse(status=403)
+                    org = None
             else:
                 return HttpResponse(status=403)
-            if cuser is not None:
-                if cuser.user.is_active:
+            if org is not None:
+                if org.is_active:
                     try:
                         if 'value' in data:
                             value = float(data['value'])
                             trans = Transaction().create(data)
                             trans.date = datetime.now()
-                            card = Card.objects.get(code=card_code, org=cuser.org.pk)
+                            card = Card.objects.get(code=card_code, org=org.pk)
 
                             trans.bonus_before = card.get_total_bonus()
-                            trans.org = cuser.org
+                            trans.org = org
                             trans.card = card
                             trans.sum = float(data['value'])
                             trans.bonus_reduce = 0
@@ -171,7 +173,7 @@ def apiAddAccumToCard(request, card_code, salt):
                             except:
                                 trans.base_doc_date = None
 
-                            d_plan = DiscountPlan.objects.get(org_id__exact=cuser.org.pk)
+                            d_plan = DiscountPlan.objects.get(org_id__exact=org.pk)
 
                             algorithm = d_plan.algorithm
                             card.accumulation += float(data['value'])
@@ -230,11 +232,11 @@ def apiToCardFromService(request):
             box = CashBox.get_by_key(data['key'])
             if box:
                 try:
-                    cuser = box.user
+                    org = box.co_unit.org
                 except:
-                    cuser = None
-            if cuser is not None:
-                if cuser.user.is_active:
+                    org = None
+            if org is not None:
+                if org.is_active:
                     try:
                         if 'type' in data:
                             if data['type'] == 'add':
@@ -242,18 +244,18 @@ def apiToCardFromService(request):
                                 if 'value' in data and 'card' in data:
                                     trans = Transaction().create(data)
                                     trans.date = datetime.strptime(data['datetime'], "%d.%m.%Y %H:%M:%S")
-                                    card = Card.objects.get(code=data['card'], org=cuser.org.pk)
+                                    card = Card.objects.get(code=data['card'], org=org.pk)
 
                                     trans.bonus_before = card.get_total_bonus()
 
-                                    d_plan = DiscountPlan.objects.get(org_id__exact=cuser.org.pk)
+                                    d_plan = DiscountPlan.objects.get(org_id__exact=org.pk)
                                     algorithm = d_plan.algorithm
                                     card.accumulation += float(data['value'])
                                     card.last_transaction_date = datetime.now().date()
                                     card.save()
 
                                     # пишем статистику
-                                    trans.org = cuser.org
+                                    trans.org = org
                                     trans.card = card
                                     trans.sum = float(data['value'])
                                     trans.bonus_reduce = 0
@@ -288,12 +290,12 @@ def apiToCardFromService(request):
                                 if 'value' in data and 'card' in data:
                                     trans = Transaction().create(data)
                                     trans.date = datetime.strptime(data['datetime'], "%d.%m.%Y %H:%M:%S")
-                                    card = Card.objects.get(code=data['card'], org=cuser.org.pk)
+                                    card = Card.objects.get(code=data['card'], org=org.pk)
 
                                     trans.bonus_before = card.get_total_bonus()
 
                                     # пишем статистику
-                                    trans.org = cuser.org
+                                    trans.org = org
                                     trans.card = card
                                     trans.sum = 0
                                     trans.bonus_reduce = float(data['value'])
@@ -327,24 +329,25 @@ def apiRemCardBonus(request, card_code, salt):
             box = check_license(data['key'], data['session_key'])
             if box:
                 try:
-                    cuser = box.user
+                    org = box.co_unit.org
                 except:
-                    cuser = None
+                    return HttpResponse(status=403)
+                    org = None
             else:
                 return HttpResponse(status=403)
-            if cuser is not None:
-                if cuser.user.is_active:
+            if org is not None:
+                if org.is_active:
                     try:
                         if 'value' in data:
                             trans = Transaction().create(data)
                             trans.date = datetime.now()
 
-                            card = Card.objects.get(code=card_code, org=cuser.org.pk)
+                            card = Card.objects.get(code=card_code, org=org.pk)
 
                             trans.bonus_before = card.get_total_bonus()
 
                             # пишем статистику
-                            trans.org = cuser.org
+                            trans.org = org
                             trans.card = card
                             trans.sum = 0
                             trans.bonus_reduce = float(data['value'])
@@ -375,15 +378,16 @@ def apiGetParams(request, salt):
             box = check_license(data['key'], data['session_key'])
             if box:
                 try:
-                    cuser = box.user
+                    org = box.co_unit.org
                 except:
-                    cuser = None
+                    return HttpResponse(status=403)
+                    org = None
             else:
                 return HttpResponse(status=403)
-            if cuser is not None:
-                if cuser.user.is_active:
+            if org is not None:
+                if org.is_active:
                     try:
-                        d_plan = DiscountPlan.objects.get(org_id__exact=cuser.org.pk)
+                        d_plan = DiscountPlan.objects.get(org_id__exact=org.pk)
                         params = d_plan.get_params()
                         if params:
                             response = ("%s;" % params['max_bonus_percentage'])

@@ -8,7 +8,6 @@ export class Alert extends React.Component{
     }
 
    render(){
-       console.log(alertCss, header);
        let header;
        let alertCss;
        if (this.props.isError){
@@ -20,10 +19,12 @@ export class Alert extends React.Component{
        }
        return(
            <div className={alertCss} role="alert">
+               <button type="button" class="close" aria-label="Close" onClick={this.closeThis}>
+                   <span aria-hidden="true">&times;</span>
+               </button>
                <h4 className="alert-heading">{header}</h4>
                <p>{this.props.message}</p>
-               <hr />
-               <button onClick={this.closeThis}><i className="fa fa-times"></i></button>
+
            </div>
        )
    }

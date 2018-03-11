@@ -4,13 +4,13 @@ from django.http import HttpRequest, HttpResponse, HttpResponseRedirect, JsonRes
 from django.db.models import Q
 from rest_framework.request import Request
 
-from users.models import CashBox
 from users.models import UserCustom
 import json
 from datetime import datetime
 from django.db import transaction
 from .serializers import DiscountPlanSerializer, CashBoxesSerializer
 from .models import DiscountPlan
+from orgs.models import Org, CashBox, COUnit
 from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 
@@ -62,23 +62,28 @@ def rest_get_discount_plan(request):
 @csrf_exempt
 def rest_get_cashboxes(request):
     response = {}
+    user = UserCustom.objects.get(user_id__exact=request.user.pk)
+    org = user.org
+    org.load_co()
     if request.method == 'GET':
-        user = UserCustom.objects.get(user_id__exact=request.user.pk)
-        cashboxes = CashBox.objects.filter(user_id__exact=user.pk)
 
         serializer_context = {
             'request': Request(request),
         }
 
-        serializer = CashBoxesSerializer(cashboxes, many=True, context=serializer_context)
-        response = serializer.data
+        co_list = list()
+        for co in org.co_unit:
+            co.load_cashboxes()
+            serializer = CashBoxesSerializer(co.cashboxes, many=True, context=serializer_context)
+            co_list.append({'id': co.pk, 'name': co.name, 'address': co.address, 'cashboxes': serializer.data})
+
+        response = co_list
         return JsonResponse(response, safe=False)
 
     if request.method == 'PUT':
-        user = UserCustom.objects.get(user_id__exact=request.user.pk)
         new_box_data = json.loads(request.body.decode())
         box = CashBox(**new_box_data)
-        box.user = user
+        box.co_unit = COUnit.objects.get(id__exact=int(new_box_data['co_unit_id']))
         box.init_frontol_key()
 
         # serializer_context = {
@@ -102,7 +107,6 @@ def rest_get_cashboxes(request):
             return JsonResponse(response, status=400)
 
     if request.method == 'DELETE':
-        user = UserCustom.objects.get(user_id__exact=request.user.pk)
         box_id = request.body.decode()
 
         try:
@@ -121,6 +125,48 @@ def rest_get_cashboxes(request):
             response['status'] = 'error'
             response['message'] = str(e)
             return JsonResponse(response, status=400)
+
+@csrf_exempt
+def rest_get_counit(request):
+    response = {}
+    user = UserCustom.objects.get(user_id__exact=request.user.pk)
+    org = user.org
+
+    if request.method == 'PUT':
+        new_counit_data = json.loads(request.body.decode())
+        counit = COUnit(**new_counit_data)
+        counit.org = org
+
+        try:
+            counit.save()
+            response['status'] = 'success'
+            response['message'] = 'Торговый объект успешно создан!'
+            return JsonResponse(response, safe=False)
+        except Exception as e:
+            response['status'] = 'error'
+            response['message'] = str(e)
+            return JsonResponse(response, status=400)
+
+    if request.method == 'DELETE':
+        counit_id = request.body.decode()
+
+        try:
+            counit = COUnit.objects.get(pk=int(counit_id))
+        except Exception as e:
+            response['status'] = 'error'
+            response['message'] = str(e)
+            return JsonResponse(response, status=400)
+
+        try:
+            counit.delete()
+            response['status'] = 'success'
+            response['message'] = 'Торговый объект удален!'
+            return JsonResponse(response, safe=False)
+        except Exception as e:
+            response['status'] = 'error'
+            response['message'] = str(e)
+            return JsonResponse(response, status=400)
+
 
 @csrf_exempt
 def rest_get_org(request):
