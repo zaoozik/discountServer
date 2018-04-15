@@ -16,6 +16,7 @@ class UserCustom(models.Model):
     org = models.ForeignKey(Org, on_delete=models.CASCADE)
     active_to = models.DateField(null=True)
     licenses_count = models.IntegerField(verbose_name='Доступное количество касс')
+    administrator = models.BooleanField(default=False)
 
     def is_active(self):
         if self.active_to >= datetime.now():
