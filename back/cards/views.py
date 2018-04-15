@@ -375,6 +375,7 @@ def rest_card_by_code(request, card_code):
         response = serializer.data
         response['bonuses'] = card.get_bonuses_array()
         response['bonus'] = card.get_total_bonus()
+        response['administrator'] = user.administrator
         return JsonResponse(response, safe=False)
 
     if request.method == 'PUT':
@@ -408,6 +409,10 @@ def rest_add_bonus(request, card_code):
     if request.method == 'PUT':
         user = UserCustom.objects.get(user_id__exact=request.user.pk)
         bonus_data = json.loads(request.body.decode())
+        if not user.administrator:
+            response['status'] = 'error'
+            response['message'] = "Недостаточно прав!"
+            return JsonResponse(response, status=503)
         try:
             card = Card.objects.get(org_id__exact=user.org.pk, code__exact=card_code)
         except:

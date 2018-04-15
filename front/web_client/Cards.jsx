@@ -128,6 +128,8 @@ export class CardInfo extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
+            administrator:
+            false,
             accumulation:
                 "",
             bonus_to_delete:
@@ -393,6 +395,16 @@ export class CardInfo extends React.Component {
             )
         }
 
+        let viewAddBonusButton=() =>{
+            return(
+                <tr >
+                    <td colspan="4">
+                        <button className="btn btn-success btn-sm" id="addCashBoxButton" data-toggle="modal" data-target="#AddBonusModal">Добавить</button>
+                    </td>
+                </tr>
+
+            )
+        }
 
         return (
             <div className={""}>
@@ -518,11 +530,7 @@ export class CardInfo extends React.Component {
                                 </thead>
                                 <tbody>
                                     {bonuses}
-                                    <tr >
-                                        <td colspan="4">
-                                            <button className="btn btn-success btn-sm" id="addCashBoxButton" data-toggle="modal" data-target="#AddBonusModal">Добавить</button>
-                                        </td>
-                                    </tr>
+                                    {this.state.administrator ? viewAddBonusButton(): ""}
                                 </tbody>
                             </table>
 
